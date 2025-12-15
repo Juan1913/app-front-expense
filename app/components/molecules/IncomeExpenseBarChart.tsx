@@ -44,12 +44,12 @@ export function IncomeExpenseBarChart() {
           <BarChart accessibilityLayer data={chartData}>
             <defs>
               <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#06b6d4" stopOpacity={0.8}/>
-                <stop offset="100%" stopColor="#0891b2" stopOpacity={0.9}/>
+                <stop offset="0%" stopColor="var(--color-chart-cyan)" stopOpacity={0.8}/>
+                <stop offset="100%" stopColor="var(--color-chart-cyan-dark)" stopOpacity={0.9}/>
               </linearGradient>
               <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.8}/>
-                <stop offset="100%" stopColor="#7c3aed" stopOpacity={0.9}/>
+                <stop offset="0%" stopColor="var(--color-chart-purple)" stopOpacity={0.8}/>
+                <stop offset="100%" stopColor="var(--color-chart-purple-dark)" stopOpacity={0.9}/>
               </linearGradient>
             </defs>
             <CartesianGrid vertical={false} />

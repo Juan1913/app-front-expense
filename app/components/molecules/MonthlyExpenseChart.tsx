@@ -35,7 +35,7 @@ const chartData = [
 const chartConfig = {
   amount: {
     label: "Monto (miles)",
-    color: "#8b5cf6",
+    color: "var(--color-chart-purple)",
   },
 } satisfies ChartConfig
 
@@ -56,19 +56,19 @@ export function MonthlyExpenseChart() {
           <RadarChart data={chartData}>
             <defs>
               <linearGradient id="radarGradient" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#06b6d4" stopOpacity={0.8}/>
-                <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0.8}/>
+                <stop offset="0%" stopColor="var(--color-chart-cyan)" stopOpacity={0.8}/>
+                <stop offset="100%" stopColor="var(--color-chart-purple)" stopOpacity={0.8}/>
               </linearGradient>
             </defs>
-            <PolarGrid stroke="#374151" strokeOpacity={0.3} />
+            <PolarGrid stroke="var(--color-chart-gray)" strokeOpacity={0.3} />
             <PolarAngleAxis 
               dataKey="category"
-              tick={{ fontSize: 8, fill: '#9CA3AF' }}
+              tick={{ fontSize: 8, fill: 'var(--color-chart-gray-light)' }}
             />
             <PolarRadiusAxis
               angle={90}
               domain={[0, 300]}
-              tick={{ fontSize: 6, fill: '#6B7280' }}
+              tick={{ fontSize: 6, fill: 'var(--color-chart-gray-dark)' }}
               tickCount={3}
             />
             <ChartTooltip
@@ -76,11 +76,11 @@ export function MonthlyExpenseChart() {
             />
             <Radar
               dataKey="amount"
-              stroke="#06b6d4"
+              stroke="var(--color-chart-cyan)"
               strokeWidth={2}
               fill="url(#radarGradient)"
               fillOpacity={0.6}
-              dot={{ fill: "#8b5cf6", r: 2 }}
+              dot={{ fill: "var(--color-chart-purple)", r: 2 }}
             />
           </RadarChart>
         </ResponsiveContainer>

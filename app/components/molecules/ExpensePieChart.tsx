@@ -45,11 +45,11 @@ const chartData = [
 const chartConfig = {
   ahorro: {
     label: "Ahorro Actual",
-    color: "#06b6d4",
+    color: "hsl(var(--color-chart-cyan))",
   },
   meta: {
     label: "Meta",
-    color: "#8b5cf6",
+    color: "hsl(var(--color-chart-purple))",
   },
 } satisfies ChartConfig
 
@@ -75,21 +75,21 @@ export function ExpensePieChart() {
           >
             <defs>
               <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#06b6d4" stopOpacity={0.8}/>
-                <stop offset="100%" stopColor="#06b6d4" stopOpacity={0.1}/>
+                <stop offset="0%" stopColor="var(--color-chart-cyan)" stopOpacity={0.8}/>
+                <stop offset="100%" stopColor="var(--color-chart-cyan)" stopOpacity={0.1}/>
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#374151" strokeOpacity={0.3} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--color-chart-gray)" strokeOpacity={0.3} />
             <XAxis 
               dataKey="month"
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 10, fill: '#9CA3AF' }}
+              tick={{ fontSize: 10, fill: 'var(--color-chart-gray-light)' }}
             />
             <YAxis 
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 8, fill: '#6B7280' }}
+              tick={{ fontSize: 8, fill: 'var(--color-chart-gray-dark)' }}
               domain={[0, 100]}
             />
             <ChartTooltip
@@ -98,10 +98,10 @@ export function ExpensePieChart() {
             <Area
               type="monotone"
               dataKey="ahorro"
-              stroke="#06b6d4"
+              stroke="var(--color-chart-cyan)"
               strokeWidth={2}
               fill="url(#areaGradient)"
-              dot={{ fill: "#06b6d4", r: 3 }}
+              dot={{ fill: "var(--color-chart-cyan)", r: 3 }}
             />
           </AreaChart>
         </ChartContainer>
