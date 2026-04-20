@@ -1,82 +1,118 @@
-import { TrendingUp } from "lucide-react"
-import { Bar, BarChart, CartesianGrid, XAxis } from "recharts"
+import { TrendingUp, TrendingDown } from "lucide-react"
+import { Bar, BarChart, CartesianGrid, XAxis, ResponsiveContainer, Tooltip } from "recharts"
 import { motion } from "framer-motion"
+import type { MonthlySummary } from "~/services/api"
+import { formatCOPShort } from "~/services/api"
 
-import {
-  type ChartConfig,
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "~/components/ui/chart"
+interface Props {
+  data: MonthlySummary[];
+}
 
-const chartData = [
-  { month: "Enero", income: 186000, expenses: 80000 },
-  { month: "Febrero", income: 305000, expenses: 200000 },
-  { month: "Marzo", income: 237000, expenses: 120000 },
-  { month: "Abril", income: 273000, expenses: 190000 },
-  { month: "Mayo", income: 209000, expenses: 130000 },
-  { month: "Junio", income: 214000, expenses: 140000 },
-]
-
-const chartConfig = {
-  income: {
-    label: "Ingresos",
-  },
-  expenses: {
-    label: "Gastos",
-  },
-} satisfies ChartConfig
-
-export function IncomeExpenseBarChart() {
+function CustomTooltip({ active, payload, label }: any) {
+  if (!active || !payload?.length) return null;
   return (
-    <motion.div 
-      className="bg-secondary rounded-2xl p-6"
-      initial={{ opacity: 0, scale: 0.95 }}
+    <div className="bg-[#1c1c1c] border border-white/[0.08] rounded-xl px-3 py-2.5 text-xs shadow-xl">
+      <p className="text-gray-400 mb-1.5 font-medium">{label}</p>
+      {payload.map((p: any) => (
+        <div key={p.dataKey} className="flex items-center gap-2 mb-1">
+          <div className="w-2 h-2 rounded-full" style={{ background: p.color }} />
+          <span className="text-gray-300">{p.name === "income" ? "Ingresos" : "Gastos"}:</span>
+          <span className="text-white font-semibold">{formatCOPShort(p.value)}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function IncomeExpenseBarChart({ data }: Props) {
+  const chartData = data.map((m) => ({
+    month: m.monthName.slice(0, 3),
+    income:   parseFloat(m.income),
+    expenses: parseFloat(m.expenses),
+  }));
+
+  const last = data[data.length - 1];
+  const prev = data[data.length - 2];
+  const trend =
+    last && prev && parseFloat(prev.income) > 0
+      ? (((parseFloat(last.income) - parseFloat(prev.income)) / parseFloat(prev.income)) * 100).toFixed(1)
+      : null;
+  const trendUp = trend !== null && parseFloat(trend) >= 0;
+
+  return (
+    <motion.div
+      className="bg-secondary rounded-2xl p-5 border border-white/[0.04]"
+      initial={{ opacity: 0, scale: 0.97 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.5 }}
     >
-      <h3 className="text-white text-lg font-semibold mb-4">Ingresos vs Gastos</h3>
-      <div className="text-gray-400 text-sm mb-4">
-        Comparación mensual últimos 6 meses
-      </div>
-      <div className="h-64 flex items-center justify-center">
-        <ChartContainer config={chartConfig} className="w-full h-full">
-          <BarChart accessibilityLayer data={chartData}>
-            <defs>
-              <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--color-chart-cyan)" stopOpacity={0.8}/>
-                <stop offset="100%" stopColor="var(--color-chart-cyan-dark)" stopOpacity={0.9}/>
-              </linearGradient>
-              <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--color-chart-purple)" stopOpacity={0.8}/>
-                <stop offset="100%" stopColor="var(--color-chart-purple-dark)" stopOpacity={0.9}/>
-              </linearGradient>
-            </defs>
-            <CartesianGrid vertical={false} />
-            <XAxis
-              dataKey="month"
-              tickLine={false}
-              tickMargin={10}
-              axisLine={false}
-              tickFormatter={(value) => value.slice(0, 3)}
-            />
-            <ChartTooltip
-              cursor={false}
-              content={<ChartTooltipContent indicator="dashed" />}
-            />
-            <Bar dataKey="income" fill="url(#incomeGradient)" radius={4} />
-            <Bar dataKey="expenses" fill="url(#expenseGradient)" radius={4} />
-          </BarChart>
-        </ChartContainer>
-      </div>
-      <div className="flex-col items-start gap-2 text-sm mt-4">
-        <div className="flex gap-2 font-medium leading-none text-white">
-          Ingresos aumentaron 5.2% este mes <TrendingUp className="h-4 w-4" />
+      {/* Header */}
+      <div className="flex items-start justify-between mb-4">
+        <div>
+          <h3 className="text-white text-sm font-semibold">Ingresos vs Gastos</h3>
+          <p className="text-gray-500 text-xs mt-0.5">Comparación mensual</p>
         </div>
-        <div className="leading-none text-gray-400 mt-2">
-          Mostrando datos de los últimos 6 meses
+        {trend !== null && (
+          <div className={`flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full ${
+            trendUp ? "bg-emerald-500/15 text-emerald-400" : "bg-rose-500/15 text-rose-400"
+          }`}>
+            {trendUp ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+            {Math.abs(parseFloat(trend))}%
+          </div>
+        )}
+      </div>
+
+      {/* Chart */}
+      <div className="h-52">
+        {chartData.length === 0 ? (
+          <div className="h-full flex items-center justify-center">
+            <p className="text-gray-600 text-sm">Sin datos disponibles</p>
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData} barCategoryGap="35%" barGap={3}>
+              <defs>
+                <linearGradient id="incomeGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#22d3ee" stopOpacity={0.9} />
+                  <stop offset="100%" stopColor="#0891b2" stopOpacity={0.7} />
+                </linearGradient>
+                <linearGradient id="expenseGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#a78bfa" stopOpacity={0.9} />
+                  <stop offset="100%" stopColor="#7c3aed" stopOpacity={0.7} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.05)" />
+              <XAxis
+                dataKey="month"
+                tickLine={false}
+                axisLine={false}
+                tick={{ fontSize: 11, fill: "#6b7280" }}
+                tickMargin={8}
+              />
+              <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(255,255,255,0.04)", radius: 4 }} />
+              <Bar dataKey="income"   fill="url(#incomeGrad)"  radius={[4, 4, 0, 0]} maxBarSize={28} />
+              <Bar dataKey="expenses" fill="url(#expenseGrad)" radius={[4, 4, 0, 0]} maxBarSize={28} />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
+      </div>
+
+      {/* Legend */}
+      <div className="flex items-center gap-4 mt-3 pt-3 border-t border-white/[0.05]">
+        <div className="flex items-center gap-1.5">
+          <div className="w-2.5 h-2.5 rounded-full bg-cyan-400" />
+          <span className="text-xs text-gray-400">Ingresos</span>
         </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-2.5 h-2.5 rounded-full bg-violet-400" />
+          <span className="text-xs text-gray-400">Gastos</span>
+        </div>
+        {chartData.length > 0 && (
+          <span className="text-xs text-gray-600 ml-auto">
+            últimos {chartData.length} meses
+          </span>
+        )}
       </div>
     </motion.div>
-  )
+  );
 }
