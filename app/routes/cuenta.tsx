@@ -1,6 +1,6 @@
 import { DashboardLayout } from "~/components/templates";
 import { motion } from "framer-motion";
-import { Loader2, Save, User, Target, LogOut } from "lucide-react";
+import { Loader2, Save, Target, LogOut } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { useAuthStore } from "~/store/authStore";
@@ -18,7 +18,6 @@ export default function Cuenta() {
   const [form, setForm] = useState<UpdateUserDTO>({
     username: "",
     monthlySavingsGoal: "",
-    profileImageUrl: "",
   });
 
   useEffect(() => {
@@ -29,7 +28,6 @@ export default function Cuenta() {
         setForm({
           username: p.username ?? "",
           monthlySavingsGoal: p.monthlySavingsGoal ?? "",
-          profileImageUrl: p.profileImageUrl ?? "",
         });
       })
       .catch((e) => setError(e.message))
@@ -58,6 +56,10 @@ export default function Cuenta() {
     navigate("/login");
   }
 
+  const initial = profile?.username?.[0]?.toUpperCase()
+    ?? profile?.email?.[0]?.toUpperCase()
+    ?? "U";
+
   return (
     <DashboardLayout>
       <div className="max-w-lg mx-auto py-4">
@@ -83,19 +85,14 @@ export default function Cuenta() {
           </div>
         ) : (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-            {/* Profile card */}
             <div className="bg-secondary rounded-2xl p-5">
               <div className="flex items-center gap-4 mb-5">
-                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
-                  {profile?.profileImageUrl ? (
-                    <img src={profile.profileImageUrl} alt="" className="w-14 h-14 rounded-full object-cover" />
-                  ) : (
-                    <User className="h-6 w-6 text-white" />
-                  )}
+                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold text-xl">
+                  {initial}
                 </div>
-                <div>
-                  <p className="text-white font-semibold">{profile?.username ?? "—"}</p>
-                  <p className="text-sm text-gray-400">{profile?.email}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-white font-semibold truncate">{profile?.username ?? "—"}</p>
+                  <p className="text-sm text-gray-400 truncate">{profile?.email}</p>
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium mt-1 inline-block ${
                     profile?.role === "ADMIN"
                       ? "bg-purple-500/20 text-purple-400"
@@ -106,28 +103,16 @@ export default function Cuenta() {
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm text-gray-400 mb-1 block">Nombre de usuario</label>
-                  <input
-                    value={form.username}
-                    onChange={(e) => setForm({ ...form, username: e.target.value })}
-                    className="w-full bg-gray-800 text-white placeholder-gray-500 px-3 py-2.5 rounded-xl border border-gray-700 focus:outline-none focus:border-cyan-500 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm text-gray-400 mb-1 block">URL foto de perfil</label>
-                  <input
-                    value={form.profileImageUrl}
-                    onChange={(e) => setForm({ ...form, profileImageUrl: e.target.value })}
-                    placeholder="https://..."
-                    className="w-full bg-gray-800 text-white placeholder-gray-500 px-3 py-2.5 rounded-xl border border-gray-700 focus:outline-none focus:border-cyan-500 text-sm"
-                  />
-                </div>
+              <div>
+                <label className="text-sm text-gray-400 mb-1 block">Nombre de usuario</label>
+                <input
+                  value={form.username}
+                  onChange={(e) => setForm({ ...form, username: e.target.value })}
+                  className="w-full bg-gray-800 text-white placeholder-gray-500 px-3 py-2.5 rounded-xl border border-gray-700 focus:outline-none focus:border-cyan-500 text-sm"
+                />
               </div>
             </div>
 
-            {/* Savings goal */}
             <div className="bg-secondary rounded-2xl p-5">
               <div className="flex items-center gap-2 mb-4">
                 <Target className="h-4 w-4 text-cyan-400" />
@@ -147,7 +132,6 @@ export default function Cuenta() {
               )}
             </div>
 
-            {/* Actions */}
             <button
               onClick={handleSave}
               disabled={saving}

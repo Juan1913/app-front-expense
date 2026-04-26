@@ -47,7 +47,8 @@ export function TopTransactionsList({ transactions, limit = 5 }: Props) {
       ) : (
         <div className="divide-y divide-white/[0.04]">
           {top.map((tx, i) => {
-            const color = catColor(tx.categoryName);
+            const catName = tx.categoryName ?? "Sin categoría";
+            const color = catColor(catName);
             return (
               <div key={tx.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-white/[0.02] transition-colors">
                 <div className="text-[11px] font-bold text-gray-600 tabular-nums w-5 flex-shrink-0">
@@ -57,10 +58,10 @@ export function TopTransactionsList({ transactions, limit = 5 }: Props) {
                   className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-sm font-bold"
                   style={{ background: `${color}22`, border: `1px solid ${color}44`, color }}
                 >
-                  {tx.categoryName[0]?.toUpperCase() ?? "?"}
+                  {catName[0]?.toUpperCase() ?? "?"}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-white truncate">{tx.categoryName}</p>
+                  <p className="text-sm font-semibold text-white truncate">{catName}</p>
                   <p className="text-[11px] text-gray-500 truncate mt-0.5">
                     {tx.description ? tx.description : tx.accountName} · {formatTxDate(tx.date)}
                   </p>

@@ -38,10 +38,11 @@ interface FormState {
   description: string;
   balance: string;
   currency: string;
+  savings: boolean;
 }
 
 const emptyForm: FormState = {
-  name: "", bank: "", cardNumber: "", description: "", balance: "0", currency: "COP",
+  name: "", bank: "", cardNumber: "", description: "", balance: "0", currency: "COP", savings: false,
 };
 
 function formatTxDate(dateStr: string) {
@@ -141,6 +142,7 @@ export default function Cuentas() {
       description: acc.description ?? "",
       balance: acc.balance,
       currency: acc.currency,
+      savings: acc.savings,
     });
     setShowModal(true);
   }
@@ -255,7 +257,7 @@ export default function Cuentas() {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25 }}
-          className="bg-secondary rounded-xl border border-white/[0.04] p-2.5 flex items-center gap-3 flex-wrap"
+          className="bg-secondary rounded-xl border border-white/[0.04] p-2.5 flex flex-col sm:flex-row sm:items-center sm:flex-wrap gap-3"
         >
           {/* Search */}
           <div className="relative w-full sm:w-[320px]">
@@ -277,16 +279,16 @@ export default function Cuentas() {
             )}
           </div>
 
-          <div className="flex-1" />
+          <div className="hidden sm:block flex-1" />
 
           {/* Currency pills */}
           {availableCurrencies.length > 1 && (
-            <div className="flex items-center gap-0.5 bg-black/20 rounded-lg p-0.5 border border-white/[0.04]">
+            <div className="flex items-center gap-0.5 bg-black/20 rounded-lg p-0.5 border border-white/[0.04] w-full sm:w-auto overflow-x-auto no-scrollbar">
               {availableCurrencies.map((c) => (
                 <button
                   key={c}
                   onClick={() => setCurrency(c)}
-                  className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                  className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all whitespace-nowrap flex-shrink-0 ${
                     currency === c
                       ? "bg-cyan-500 text-white shadow-sm shadow-cyan-500/30"
                       : "text-gray-400 hover:text-white"
@@ -298,17 +300,19 @@ export default function Cuentas() {
             </div>
           )}
 
-          {/* Custom sort dropdown */}
-          <SortDropdown value={sortBy} onChange={setSortBy} />
+          <div className="flex items-center gap-2 self-end sm:self-auto">
+            {/* Custom sort dropdown */}
+            <SortDropdown value={sortBy} onChange={setSortBy} />
 
-          {/* Dir toggle */}
-          <button
-            onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
-            title={sortDir === "asc" ? "Ascendente" : "Descendente"}
-            className="w-9 h-9 flex items-center justify-center rounded-lg bg-black/20 border border-white/[0.04] text-gray-400 hover:text-white hover:border-white/[0.08] transition-colors text-sm font-bold"
-          >
-            {sortDir === "asc" ? "↑" : "↓"}
-          </button>
+            {/* Dir toggle */}
+            <button
+              onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+              title={sortDir === "asc" ? "Ascendente" : "Descendente"}
+              className="w-9 h-9 flex items-center justify-center rounded-lg bg-black/20 border border-white/[0.04] text-gray-400 hover:text-white hover:border-white/[0.08] transition-colors text-sm font-bold flex-shrink-0"
+            >
+              {sortDir === "asc" ? "↑" : "↓"}
+            </button>
+          </div>
         </motion.div>
 
         {/* ── Grid ── */}
@@ -516,7 +520,14 @@ function AccountCard({
       {/* Info row */}
       <div className="px-1 flex items-center justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <p className="text-white font-semibold text-sm truncate">{account.name}</p>
+          <div className="flex items-center gap-1.5">
+            <p className="text-white font-semibold text-sm truncate">{account.name}</p>
+            {account.savings && (
+              <span className="text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 flex-shrink-0">
+                Ahorro
+              </span>
+            )}
+          </div>
           <p className="text-gray-500 text-xs mt-0.5 truncate">
             {account.description || <span className="italic text-gray-600">Sin descripción</span>}
           </p>
@@ -699,6 +710,22 @@ function CreateEditModal({
                   </select>
                 </Field>
               </div>
+
+              {/* Savings toggle */}
+              <label className="flex items-start gap-3 p-3 bg-black/20 border border-white/[0.04] rounded-xl cursor-pointer hover:border-amber-500/30 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={form.savings}
+                  onChange={(e) => onChange({ ...form, savings: e.target.checked })}
+                  className="mt-0.5 h-4 w-4 accent-amber-500"
+                />
+                <div className="flex-1">
+                  <div className="text-sm text-white font-semibold">Cuenta de ahorro</div>
+                  <p className="text-[11px] text-gray-500 mt-0.5">
+                    Su saldo se cuenta como "Ahorrado" en el dashboard. Mové plata aquí desde tus cuentas operativas con el botón Ahorrar.
+                  </p>
+                </div>
+              </label>
             </div>
 
             <div className="flex gap-3 mt-6">

@@ -27,6 +27,15 @@
   background: radial-gradient(circle, var(--tw-gradient-stops));
 }
 
+/* Oculta la scrollbar pero conserva el scroll (útil en chips horizontales en móvil) */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 html,
 body {
   @apply bg-primary text-white min-h-screen font-sans;

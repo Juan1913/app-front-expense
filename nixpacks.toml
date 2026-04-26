@@ -1,0 +1,17 @@
+# nixpacks.toml
+[phases.setup]
+nixPkgs = ["nodejs_20"]
+
+[phases.install]
+cmds = ["npm install"]
+
+[phases.build]
+cmds = ["npm run build"]
+
+[start]
+cmd = "npm run start"
+
+[build]
+  # Forzar Node.js 20
+  [build.env]
+  NODE_VERSION = "20"

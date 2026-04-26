@@ -299,21 +299,23 @@ function computeMetrics(txns: TransactionDTO[]): {
   let weekdayTotal = 0, weekdayCount = 0, weekendTotal = 0, weekendCount = 0;
 
   for (const t of txns) {
+    if (t.type === "TRANSFER") continue;          // las transferencias no son flujo
     const d = new Date(t.date);
     const key = `${d.getFullYear()}-${String(d.getMonth()).padStart(2, "0")}`;
     const amount = parseFloat(t.amount);
+    const catName = t.categoryName ?? "Sin categoría";
 
     if (!byMonth.has(key)) byMonth.set(key, { income: 0, expenses: 0, date: new Date(d.getFullYear(), d.getMonth(), 1) });
     const bucket = byMonth.get(key)!;
     if (t.type === "INCOME") {
       bucket.income += amount;
-      byIncomeCat.set(t.categoryName, (byIncomeCat.get(t.categoryName) ?? 0) + amount);
+      byIncomeCat.set(catName, (byIncomeCat.get(catName) ?? 0) + amount);
     } else {
       bucket.expenses += amount;
     }
 
     if (t.type === "EXPENSE") {
-      byCategory.set(t.categoryName, (byCategory.get(t.categoryName) ?? 0) + amount);
+      byCategory.set(catName, (byCategory.get(catName) ?? 0) + amount);
       byAccount.set(t.accountName,   (byAccount.get(t.accountName)   ?? 0) + amount);
 
       const dow = (d.getDay() + 6) % 7; // Mon = 0
@@ -333,10 +335,10 @@ function computeMetrics(txns: TransactionDTO[]): {
       // Category per month (for trends)
       if (!byCatPerMonth.has(key)) byCatPerMonth.set(key, new Map());
       const catMap = byCatPerMonth.get(key)!;
-      catMap.set(t.categoryName, (catMap.get(t.categoryName) ?? 0) + amount);
+      catMap.set(catName, (catMap.get(catName) ?? 0) + amount);
 
       // Recurring heuristic: same (description || categoryName) + rounded amount
-      const label = t.description?.trim() || t.categoryName;
+      const label = t.description?.trim() || catName;
       const roundedAmount = Math.round(amount / 100) * 100; // bucket nearby amounts
       const recKey = `${label.toLowerCase()}__${roundedAmount}`;
       const rec = recurringMap.get(recKey);
@@ -348,7 +350,7 @@ function computeMetrics(txns: TransactionDTO[]): {
           count: 1,
           amount,
           lastDate: t.date,
-          categoryName: t.categoryName,
+          categoryName: catName,
           label,
         });
       }

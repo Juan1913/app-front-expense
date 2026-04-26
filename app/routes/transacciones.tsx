@@ -6,9 +6,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, X, Loader2, TrendingUp, TrendingDown,
   ChevronLeft, ChevronRight, Search, ChevronDown, Filter,
-  CreditCard, Tag, Calendar, Wallet, Scale,
+  CreditCard, Tag, Calendar, Wallet, Scale, ArrowRightLeft,
 } from "lucide-react";
 import { useState, useEffect, useMemo, useRef } from "react";
+import { useSearchParams } from "react-router";
 import {
   transactions, accounts, categories, formatCOP, formatCOPShort,
   type TransactionDTO, type AccountDTO, type CategoryDTO,
@@ -18,7 +19,7 @@ import {
 
 // ─── Types and constants ─────────────────────────────────────────────────────
 
-type TypeFilter = "ALL" | "INCOME" | "EXPENSE";
+type TypeFilter = "ALL" | "INCOME" | "EXPENSE" | "TRANSFER";
 type DatePreset = "ALL" | "TODAY" | "7D" | "30D" | "MONTH" | "3M" | "YEAR" | "CUSTOM";
 
 const DATE_PRESETS: { value: DatePreset; label: string }[] = [
@@ -87,6 +88,8 @@ function dateGroupLabel(date: Date): string {
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function Transacciones() {
+  const [searchParams] = useSearchParams();
+  const initialQuery = searchParams.get("q") ?? "";
   const [list, setList] = useState<TransactionDTO[]>([]);
   const [summary, setSummary] = useState<TransactionSummary | null>(null);
   const [totalPages, setTotalPages] = useState(0);
@@ -105,8 +108,8 @@ export default function Transacciones() {
   const [categoryFilter, setCategoryFilter] = useState("ALL");
   const [minAmount, setMinAmount] = useState("");
   const [maxAmount, setMaxAmount] = useState("");
-  const [search, setSearch] = useState("");
-  const [searchDebounced, setSearchDebounced] = useState("");
+  const [search, setSearch] = useState(initialQuery);
+  const [searchDebounced, setSearchDebounced] = useState(initialQuery);
   const [minDebounced, setMinDebounced] = useState("");
   const [maxDebounced, setMaxDebounced] = useState("");
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -122,6 +125,13 @@ export default function Transacciones() {
   const [saving, setSaving] = useState(false);
   const [detailTarget, setDetailTarget] = useState<TransactionDTO | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<TransactionDTO | null>(null);
+
+  // Sync URL ?q= into search state (e.g. when header search navigates here)
+  const urlQuery = searchParams.get("q") ?? "";
+  useEffect(() => {
+    setSearch(urlQuery);
+    setSearchDebounced(urlQuery);
+  }, [urlQuery]);
 
   // Debounce
   useEffect(() => { const t = setTimeout(() => setSearchDebounced(search), 300); return () => clearTimeout(t); }, [search]);
@@ -193,7 +203,11 @@ export default function Transacciones() {
 
   const activeChips = useMemo(() => {
     const chips: { key: string; label: string; onRemove: () => void }[] = [];
-    if (typeFilter !== "ALL") chips.push({ key: "type", label: typeFilter === "INCOME" ? "Ingresos" : "Gastos", onRemove: () => setTypeFilter("ALL") });
+    if (typeFilter !== "ALL") chips.push({
+      key: "type",
+      label: typeFilter === "INCOME" ? "Ingresos" : typeFilter === "EXPENSE" ? "Gastos" : "Movimientos",
+      onRemove: () => setTypeFilter("ALL"),
+    });
     if (datePreset !== "ALL") chips.push({ key: "date", label: DATE_PRESETS.find(p => p.value === datePreset)?.label ?? "", onRemove: () => setDatePreset("ALL") });
     if (accountFilter !== "ALL") {
       const a = accountList.find(x => x.id === accountFilter);
@@ -226,17 +240,28 @@ export default function Transacciones() {
     setForm({
       amount: tx.amount, date: tx.date.slice(0, 16),
       description: tx.description ?? "",
-      type: tx.type, accountId: tx.accountId, categoryId: tx.categoryId,
+      type: tx.type, accountId: tx.accountId,
+      transferToAccountId: tx.transferToAccountId ?? undefined,
+      categoryId: tx.categoryId ?? undefined,
     });
     setShowModal(true);
   }
 
   async function handleSave() {
-    if (!form.amount || !form.accountId || !form.categoryId) return;
+    if (!form.amount || !form.accountId) return;
+    if (form.type === "TRANSFER") {
+      if (!form.transferToAccountId || form.transferToAccountId === form.accountId) return;
+    } else {
+      if (!form.categoryId) return;
+    }
     setSaving(true);
     try {
-      if (editing) await transactions.update(editing.id, form);
-      else         await transactions.create(form);
+      // Sanitiza el payload para no mandar campos prohibidos según el tipo.
+      const payload = form.type === "TRANSFER"
+        ? { ...form, categoryId: undefined }
+        : { ...form, transferToAccountId: undefined };
+      if (editing) await transactions.update(editing.id, payload);
+      else         await transactions.create(payload);
       const [r, s] = await Promise.all([
         transactions.list({ ...filters, sortBy, sortDir, page, size: pageSize }),
         transactions.summary(filters),
@@ -297,7 +322,7 @@ export default function Transacciones() {
         {/* Filter toolbar */}
         <motion.div
           initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-          className="bg-secondary rounded-xl border border-white/[0.04] p-2.5 flex items-center gap-3 flex-wrap"
+          className="bg-secondary rounded-xl border border-white/[0.04] p-2.5 flex flex-col sm:flex-row sm:items-center sm:flex-wrap gap-3"
         >
           <div className="relative w-full sm:w-[260px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
@@ -315,60 +340,65 @@ export default function Transacciones() {
             )}
           </div>
 
-          {/* Type pills */}
-          <div className="flex items-center gap-0.5 bg-black/20 rounded-lg p-0.5 border border-white/[0.04]">
-            {(["ALL", "INCOME", "EXPENSE"] as const).map((t) => (
+          {/* Type pills — scroll horizontal en móvil */}
+          <div className="flex items-center gap-0.5 bg-black/20 rounded-lg p-0.5 border border-white/[0.04] w-full sm:w-auto overflow-x-auto no-scrollbar">
+            {(["ALL", "INCOME", "EXPENSE", "TRANSFER"] as const).map((t) => (
               <button
                 key={t}
                 onClick={() => setTypeFilter(t)}
-                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${
                   typeFilter === t
                     ? t === "INCOME" ? "bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-500/40"
                     : t === "EXPENSE" ? "bg-rose-500/20 text-rose-300 ring-1 ring-rose-500/40"
+                    : t === "TRANSFER" ? "bg-cyan-500/20 text-cyan-300 ring-1 ring-cyan-500/40"
                     : "bg-white/10 text-white"
                     : "text-gray-400 hover:text-white"
                 }`}
               >
                 {t === "INCOME" && <TrendingUp className="h-3 w-3" />}
                 {t === "EXPENSE" && <TrendingDown className="h-3 w-3" />}
-                {t === "ALL" ? "Todas" : t === "INCOME" ? "Ingresos" : "Gastos"}
+                {t === "TRANSFER" && <ArrowRightLeft className="h-3 w-3" />}
+                {t === "ALL" ? "Todas" : t === "INCOME" ? "Ingresos" : t === "EXPENSE" ? "Gastos" : "Movimientos"}
               </button>
             ))}
           </div>
 
-          <div className="flex-1" />
+          <div className="hidden sm:block flex-1" />
 
-          <Dropdown
-            icon={<Calendar className="h-3.5 w-3.5 text-gray-500" />}
-            options={DATE_PRESETS}
-            value={datePreset}
-            onChange={(v) => setDatePreset(v as DatePreset)}
-          />
+          {/* Right side controls — wrap natural en móvil */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <Dropdown
+              icon={<Calendar className="h-3.5 w-3.5 text-gray-500" />}
+              options={DATE_PRESETS}
+              value={datePreset}
+              onChange={(v) => setDatePreset(v as DatePreset)}
+            />
 
-          <Dropdown
-            label="Ordenar:"
-            options={SORT_OPTIONS}
-            value={sortBy}
-            onChange={(v) => setSortBy(v as TransactionSortBy)}
-          />
-          <button
-            onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
-            title={sortDir === "asc" ? "Ascendente" : "Descendente"}
-            className="w-9 h-9 flex items-center justify-center rounded-lg bg-black/20 border border-white/[0.04] text-gray-400 hover:text-white hover:border-white/[0.08] transition-colors text-sm font-bold"
-          >
-            {sortDir === "asc" ? "↑" : "↓"}
-          </button>
+            <Dropdown
+              label="Ordenar:"
+              options={SORT_OPTIONS}
+              value={sortBy}
+              onChange={(v) => setSortBy(v as TransactionSortBy)}
+            />
+            <button
+              onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+              title={sortDir === "asc" ? "Ascendente" : "Descendente"}
+              className="w-9 h-9 flex items-center justify-center rounded-lg bg-black/20 border border-white/[0.04] text-gray-400 hover:text-white hover:border-white/[0.08] transition-colors text-sm font-bold flex-shrink-0"
+            >
+              {sortDir === "asc" ? "↑" : "↓"}
+            </button>
 
-          <button
-            onClick={() => setShowAdvanced(!showAdvanced)}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
-              showAdvanced ? "bg-cyan-500/15 text-cyan-300 ring-1 ring-cyan-500/30" : "bg-black/20 text-gray-400 hover:text-white border border-white/[0.04]"
-            }`}
-          >
-            <Filter className="h-3.5 w-3.5" />
-            Más filtros
-            <ChevronDown className={`h-3 w-3 transition-transform ${showAdvanced ? "rotate-180" : ""}`} />
-          </button>
+            <button
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap ${
+                showAdvanced ? "bg-cyan-500/15 text-cyan-300 ring-1 ring-cyan-500/30" : "bg-black/20 text-gray-400 hover:text-white border border-white/[0.04]"
+              }`}
+            >
+              <Filter className="h-3.5 w-3.5" />
+              Más filtros
+              <ChevronDown className={`h-3 w-3 transition-transform ${showAdvanced ? "rotate-180" : ""}`} />
+            </button>
+          </div>
         </motion.div>
 
         {/* Advanced filters */}
@@ -461,7 +491,10 @@ export default function Transacciones() {
         ) : (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
             {groups.map((g) => {
-              const groupTotal = g.items.reduce((s, t) => s + (t.type === "INCOME" ? 1 : -1) * parseFloat(t.amount), 0);
+              const groupTotal = g.items.reduce((s, t) => {
+                if (t.type === "TRANSFER") return s;          // TRANSFER no afecta el neto del día
+                return s + (t.type === "INCOME" ? 1 : -1) * parseFloat(t.amount);
+              }, 0);
               return (
                 <div key={g.key}>
                   <div className="flex items-center justify-between mb-2 px-1">

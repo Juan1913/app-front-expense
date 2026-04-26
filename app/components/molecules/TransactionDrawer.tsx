@@ -1,5 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Edit3, Trash2, TrendingUp, TrendingDown, Calendar, Tag, CreditCard } from "lucide-react";
+import {
+  X, Edit3, Trash2, TrendingUp, TrendingDown, Calendar, Tag, CreditCard, ArrowRightLeft,
+} from "lucide-react";
 import type { TransactionDTO } from "~/services/api";
 import { formatCOP } from "~/services/api";
 
@@ -46,19 +48,29 @@ export function TransactionDrawer({ tx, onClose, onEdit, onDelete }: Props) {
                 style={{
                   background: tx.type === "INCOME"
                     ? "radial-gradient(circle at top, rgba(52,211,153,0.18), transparent 70%), #121215"
-                    : "radial-gradient(circle at top, rgba(251,113,133,0.18), transparent 70%), #121215",
+                    : tx.type === "TRANSFER"
+                      ? "radial-gradient(circle at top, rgba(34,211,238,0.18), transparent 70%), #121215"
+                      : "radial-gradient(circle at top, rgba(251,113,133,0.18), transparent 70%), #121215",
                 }}
               >
                 <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest mb-3 ${
                   tx.type === "INCOME"
                     ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
-                    : "bg-rose-500/15 text-rose-400 border border-rose-500/30"
+                    : tx.type === "TRANSFER"
+                      ? "bg-cyan-500/15 text-cyan-400 border border-cyan-500/30"
+                      : "bg-rose-500/15 text-rose-400 border border-rose-500/30"
                 }`}>
-                  {tx.type === "INCOME" ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                  {tx.type === "INCOME" ? "Ingreso" : "Gasto"}
+                  {tx.type === "INCOME" ? <TrendingUp className="h-3 w-3" />
+                    : tx.type === "TRANSFER" ? <ArrowRightLeft className="h-3 w-3" />
+                    : <TrendingDown className="h-3 w-3" />}
+                  {tx.type === "INCOME" ? "Ingreso" : tx.type === "TRANSFER" ? "Movimiento" : "Gasto"}
                 </div>
-                <div className={`text-3xl font-bold tabular-nums ${tx.type === "INCOME" ? "text-emerald-400" : "text-rose-400"}`}>
-                  {tx.type === "INCOME" ? "+" : "−"}{formatCOP(tx.amount)}
+                <div className={`text-3xl font-bold tabular-nums ${
+                  tx.type === "INCOME" ? "text-emerald-400"
+                    : tx.type === "TRANSFER" ? "text-cyan-300"
+                    : "text-rose-400"
+                }`}>
+                  {tx.type === "TRANSFER" ? "" : tx.type === "INCOME" ? "+" : "−"}{formatCOP(tx.amount)}
                 </div>
                 <p className="text-sm text-gray-400 mt-2">
                   {tx.description || <span className="italic text-gray-600">Sin descripción</span>}
@@ -67,8 +79,17 @@ export function TransactionDrawer({ tx, onClose, onEdit, onDelete }: Props) {
 
               {/* Info rows */}
               <div className="bg-secondary rounded-xl border border-white/[0.04] divide-y divide-white/[0.04]">
-                <InfoRow label="Categoría" value={tx.categoryName} icon={<Tag className="h-3.5 w-3.5 text-gray-500" />} />
-                <InfoRow label="Cuenta"    value={tx.accountName}  icon={<CreditCard className="h-3.5 w-3.5 text-gray-500" />} />
+                {tx.type === "TRANSFER" ? (
+                  <>
+                    <InfoRow label="Origen"  value={tx.accountName} icon={<CreditCard className="h-3.5 w-3.5 text-gray-500" />} />
+                    <InfoRow label="Destino" value={tx.transferToAccountName ?? "—"} icon={<ArrowRightLeft className="h-3.5 w-3.5 text-cyan-400" />} />
+                  </>
+                ) : (
+                  <>
+                    <InfoRow label="Categoría" value={tx.categoryName ?? "—"} icon={<Tag className="h-3.5 w-3.5 text-gray-500" />} />
+                    <InfoRow label="Cuenta"    value={tx.accountName}         icon={<CreditCard className="h-3.5 w-3.5 text-gray-500" />} />
+                  </>
+                )}
                 <InfoRow
                   label="Fecha"
                   value={new Date(tx.date).toLocaleString("es-CO", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}

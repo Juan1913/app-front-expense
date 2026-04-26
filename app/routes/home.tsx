@@ -11,8 +11,8 @@ import {
 } from "~/components/molecules";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  CreditCard, TrendingUp, TrendingDown, PiggyBank,
-  Calendar, ArrowRight, Layers, X,
+  CreditCard, TrendingUp, TrendingDown, PiggyBank, Wallet,
+  Calendar, ArrowRight, Layers, X, ArrowRightLeft,
 } from "lucide-react";
 import {
   dashboard,
@@ -20,7 +20,9 @@ import {
   transactions as txnApi,
   formatCOPShort, formatCOP, daysLeftInMonth,
   type DashboardSummary, type AccountDTO, type TransactionDTO,
+  type CreateTransactionDTO,
 } from "~/services/api";
+import { TransactionModal } from "~/components/molecules";
 import { useAuthStore } from "~/store/authStore";
 
 export function meta({}: Route.MetaArgs) {
@@ -43,6 +45,17 @@ const PERIODS: { label: string; value: Period; months?: number }[] = [
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function emptyTransferForm(): CreateTransactionDTO {
+  return {
+    amount: "",
+    date: new Date().toISOString().slice(0, 16),
+    description: "",
+    type: "TRANSFER",
+    accountId: "",
+    transferToAccountId: undefined,
+  };
+}
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -159,9 +172,46 @@ export default function Home() {
   const user = useAuthStore((s) => s.user);
   const navigate = useNavigate();
 
+  // Quick "Ahorrar" modal state
+  const [saveModalOpen, setSaveModalOpen] = useState(false);
+  const [saveForm, setSaveForm] = useState<CreateTransactionDTO>(emptyTransferForm());
+  const [saveSaving, setSaveSaving] = useState(false);
+
   useEffect(() => {
     accountsApi.list().then(setAccountList).catch(() => {});
   }, []);
+
+  function openSaveModal() {
+    const operational = accountList.find((a) => !a.savings);
+    const target = accountList.find((a) => a.savings);
+    setSaveForm({
+      ...emptyTransferForm(),
+      accountId: operational?.id ?? "",
+      transferToAccountId: target?.id,
+    });
+    setSaveModalOpen(true);
+  }
+
+  async function handleSave() {
+    if (!saveForm.amount || !saveForm.accountId || !saveForm.transferToAccountId) return;
+    setSaveSaving(true);
+    try {
+      const { categoryId: _omit, ...payload } = saveForm;
+      await txnApi.create(payload);
+      setSaveModalOpen(false);
+      // Refresca summary y cuentas (los balances cambiaron)
+      const months = PERIODS.find((p) => p.value === period)?.months;
+      const [s, a] = await Promise.all([
+        dashboard.getSummary({ accountId: selectedAccount?.id, months }),
+        accountsApi.list(),
+      ]);
+      setSummary(s); setAccountList(a);
+    } catch (e: any) {
+      setError(e.message ?? "Error guardando ahorro");
+    } finally { setSaveSaving(false); }
+  }
+
+  const hasSavingsAccount = accountList.some((a) => a.savings);
 
   useEffect(() => {
     const months = PERIODS.find((p) => p.value === period)?.months;
@@ -190,7 +240,6 @@ export default function Home() {
   const totalIncome     = parseFloat(summary?.totalIncome ?? "0");
   const totalExpenses   = parseFloat(summary?.totalExpenses ?? "0");
   const expenseRatio    = totalIncome > 0 ? Math.min((totalExpenses / totalIncome) * 100, 100) : 0;
-  const balancePositive = parseFloat(summary?.totalSavings ?? "0") >= 0;
 
   return (
     <DashboardLayout>
@@ -200,17 +249,34 @@ export default function Home() {
         </div>
       )}
 
-      {/* ── Greeting ── */}
+      {/* ── Greeting + quick actions ── */}
       <motion.div
-        className="mb-5"
+        className="mb-5 flex items-start justify-between gap-3 flex-wrap"
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35 }}
       >
-        <h1 className="text-white text-2xl font-bold tracking-tight">
-          {getGreeting()}, {user?.username ?? "Usuario"}
-        </h1>
-        <p className="text-gray-500 text-sm mt-0.5">Resumen de tus finanzas personales</p>
+        <div>
+          <h1 className="text-white text-2xl font-bold tracking-tight">
+            {getGreeting()}, {user?.username ?? "Usuario"}
+          </h1>
+          <p className="text-gray-500 text-sm mt-0.5">Resumen de tus finanzas personales</p>
+        </div>
+        <button
+          onClick={openSaveModal}
+          disabled={accountList.length < 2}
+          title={
+            accountList.length < 2
+              ? "Necesitás al menos 2 cuentas para mover plata"
+              : !hasSavingsAccount
+                ? "Marca una cuenta como ahorro para que sume a 'Ahorrado'"
+                : "Mover plata desde una cuenta operativa hacia ahorro"
+          }
+          className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white text-sm font-semibold rounded-xl hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity shadow-lg shadow-amber-500/20"
+        >
+          <PiggyBank className="h-4 w-4" />
+          Ahorrar
+        </button>
       </motion.div>
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
@@ -244,10 +310,10 @@ export default function Home() {
               </>
             ) : (
               <>
-                <StatCard delay={0.10} gradient="from-sky-400 to-blue-600"     accentColor="border-sky-500"     label="Transacciones" value={String(summary?.totalTransactions ?? 0)}       subtext="registradas"    icon={<CreditCard   className="h-5 w-5 text-white" />} />
-                <StatCard delay={0.20} gradient="from-emerald-400 to-teal-600" accentColor="border-emerald-500" label="Ingresos"       value={formatCOPShort(summary?.totalIncome    ?? "0")} subtext="acumulados"     icon={<TrendingUp   className="h-5 w-5 text-white" />} />
-                <StatCard delay={0.30} gradient="from-rose-400 to-red-600"     accentColor="border-rose-500"    label="Egresos"        value={formatCOPShort(summary?.totalExpenses  ?? "0")} subtext="acumulados"     icon={<TrendingDown className="h-5 w-5 text-white" />} />
-                <StatCard delay={0.40} gradient="from-violet-400 to-purple-600" accentColor="border-violet-500" label="Ahorro Neto"    value={formatCOPShort(summary?.totalSavings   ?? "0")} subtext="balance actual" icon={<PiggyBank    className="h-5 w-5 text-white" />} />
+                <StatCard delay={0.10} gradient="from-sky-400 to-blue-600"     accentColor="border-sky-500"     label="Patrimonio"    value={formatCOPShort(summary?.totalNetWorth ?? "0")} subtext="Σ saldos en cuentas"            icon={<Wallet       className="h-5 w-5 text-white" />} />
+                <StatCard delay={0.20} gradient="from-amber-400 to-orange-600" accentColor="border-amber-500"   label="Ahorrado"      value={formatCOPShort(summary?.totalInSavingsAccounts ?? "0")} subtext="cuentas marcadas ahorro"  icon={<PiggyBank    className="h-5 w-5 text-white" />} />
+                <StatCard delay={0.30} gradient="from-emerald-400 to-teal-600" accentColor="border-emerald-500" label="Ingresos"      value={formatCOPShort(summary?.totalIncome    ?? "0")} subtext="acumulados"                     icon={<TrendingUp   className="h-5 w-5 text-white" />} />
+                <StatCard delay={0.40} gradient="from-rose-400 to-red-600"     accentColor="border-rose-500"    label="Egresos"       value={formatCOPShort(summary?.totalExpenses  ?? "0")} subtext="acumulados"                     icon={<TrendingDown className="h-5 w-5 text-white" />} />
               </>
             )}
           </div>
@@ -349,7 +415,11 @@ export default function Home() {
               <div>
                 <AnimatePresence>
                   {recentTxns.map((tx, i) => {
-                    const color = categoryColor(tx.categoryName);
+                    const isTransfer = tx.type === "TRANSFER";
+                    const title = isTransfer
+                      ? `${tx.accountName} → ${tx.transferToAccountName ?? "—"}`
+                      : (tx.categoryName ?? "Sin categoría");
+                    const color = isTransfer ? "#22d3ee" : categoryColor(title);
                     const isIncome = tx.type === "INCOME";
                     return (
                       <motion.div
@@ -367,12 +437,12 @@ export default function Home() {
                             color,
                           }}
                         >
-                          {tx.categoryName[0]?.toUpperCase() ?? "?"}
+                          {isTransfer ? <ArrowRightLeft className="h-4 w-4" /> : (title[0]?.toUpperCase() ?? "?")}
                         </div>
 
                         <div className="flex-1 min-w-0">
                           <div className="text-sm font-semibold text-white truncate">
-                            {tx.categoryName}
+                            {title}
                           </div>
                           <div className="text-[11px] text-gray-500 truncate mt-0.5">
                             {tx.description ? tx.description : tx.accountName} · {formatTxDate(tx.date)}
@@ -380,15 +450,17 @@ export default function Home() {
                         </div>
 
                         <div className="text-right flex-shrink-0">
-                          <div className={`text-sm font-bold mb-1 ${isIncome ? "text-emerald-400" : "text-rose-400"}`}>
-                            {isIncome ? "+" : "−"}{formatCOPShort(tx.amount)}
+                          <div className={`text-sm font-bold mb-1 ${
+                            isTransfer ? "text-cyan-300" : isIncome ? "text-emerald-400" : "text-rose-400"
+                          }`}>
+                            {isTransfer ? "" : isIncome ? "+" : "−"}{formatCOPShort(tx.amount)}
                           </div>
                           <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                            isIncome
-                              ? "bg-emerald-500/15 text-emerald-400"
+                            isTransfer ? "bg-cyan-500/15 text-cyan-300"
+                              : isIncome ? "bg-emerald-500/15 text-emerald-400"
                               : "bg-rose-500/15 text-rose-400"
                           }`}>
-                            {isIncome ? "INGRESO" : "GASTO"}
+                            {isTransfer ? "MOV" : isIncome ? "INGRESO" : "GASTO"}
                           </span>
                         </div>
                       </motion.div>
@@ -460,10 +532,16 @@ export default function Home() {
                 <SectionLabel color="bg-cyan-400" text="Resumen Mensual" />
                 <div className="space-y-2.5">
                   <div className="flex justify-between items-center gap-2">
-                    <span className="text-xs text-gray-400">Balance</span>
-                    <span className={`text-sm font-bold truncate ${balancePositive ? "text-emerald-400" : "text-rose-400"}`}>
-                      {balancePositive ? "+" : ""}{formatCOP(summary?.totalSavings ?? "0")}
-                    </span>
+                    <span className="text-xs text-gray-400">Ahorro del mes</span>
+                    {(() => {
+                      const monthSavings = parseFloat(latestSavings?.savingsAmount ?? "0");
+                      const positive = monthSavings >= 0;
+                      return (
+                        <span className={`text-sm font-bold truncate ${positive ? "text-emerald-400" : "text-rose-400"}`}>
+                          {positive ? "+" : ""}{formatCOP(monthSavings)}
+                        </span>
+                      );
+                    })()}
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-xs text-gray-400">Ahorro Meta</span>
@@ -490,6 +568,19 @@ export default function Home() {
           )}
         </motion.div>
       </div>
+
+      {/* Quick "Ahorrar" modal — usa el TransactionModal preconfigurado en TRANSFER */}
+      <TransactionModal
+        open={saveModalOpen}
+        editing={null}
+        form={saveForm}
+        saving={saveSaving}
+        accounts={accountList}
+        categories={[]}
+        onClose={() => setSaveModalOpen(false)}
+        onChange={setSaveForm}
+        onSave={handleSave}
+      />
     </DashboardLayout>
   );
 }

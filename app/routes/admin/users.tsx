@@ -149,16 +149,10 @@ export default function AdminUsers() {
                     {/* User info */}
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-gray-700 overflow-hidden flex-shrink-0">
-                          {user.profileImageUrl ? (
-                            <img src={user.profileImageUrl} alt="" className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <span className="text-gray-300 text-sm font-medium">
-                                {(user.username ?? user.email)[0].toUpperCase()}
-                              </span>
-                            </div>
-                          )}
+                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center flex-shrink-0">
+                          <span className="text-white text-sm font-bold">
+                            {(user.username ?? user.email)[0].toUpperCase()}
+                          </span>
                         </div>
                         <div>
                           <p className="text-white text-sm font-medium leading-tight">

@@ -6,7 +6,6 @@ export interface LoginResponse {
   email: string;
   username: string;
   role: string;
-  profileImageUrl: string | null;
 }
 
 export interface AccountDTO {
@@ -17,6 +16,7 @@ export interface AccountDTO {
   description: string | null;
   balance: string;
   currency: string;
+  savings: boolean;
   createdAt: string;
 }
 
@@ -57,22 +57,29 @@ export interface DashboardSummary {
   totalIncome: string;
   totalExpenses: string;
   totalSavings: string;
+  totalNetWorth: string;
+  totalInSavingsAccounts: string;
+  totalOperational: string;
   monthlySummaries: MonthlySummary[];
   expensesByCategory: ExpenseByCategory[];
   budgetComparisons: BudgetComparison[];
   monthlySavingsProgress: MonthlySavingsProgress[];
 }
 
+export type TransactionType = "INCOME" | "EXPENSE" | "TRANSFER";
+
 export interface TransactionDTO {
   id: string;
   amount: string;
   date: string;
   description: string | null;
-  type: "INCOME" | "EXPENSE";
+  type: TransactionType;
   accountId: string;
   accountName: string;
-  categoryId: string;
-  categoryName: string;
+  transferToAccountId: string | null;
+  transferToAccountName: string | null;
+  categoryId: string | null;
+  categoryName: string | null;
   userId: string;
   createdAt: string;
 }
@@ -83,7 +90,6 @@ export interface UserDTO {
   email: string;
   role: string;
   monthlySavingsGoal: string | null;
-  profileImageUrl: string | null;
   active: boolean;
   emailVerified: boolean;
   createdAt: string;
@@ -119,6 +125,19 @@ export const clearSession = () => {};
 
 const BASE_URL = (import.meta.env.VITE_API_URL ?? "") + "/api/v1";
 
+function handleSessionExpired(path: string): boolean {
+  // /auth/* devuelve 401 con credenciales malas — el form lo muestra.
+  if (path.startsWith("/auth/")) return false;
+  if (typeof window === "undefined") return false;
+  if (window.location.pathname === "/login") return false;
+
+  try { localStorage.removeItem("finz-auth"); } catch {}
+
+  const next = encodeURIComponent(window.location.pathname + window.location.search);
+  window.location.href = `/login?next=${next}&reason=expired`;
+  return true;
+}
+
 async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = getToken();
   const res = await fetch(`${BASE_URL}${path}`, {
@@ -130,10 +149,8 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
     },
   });
 
-  if (res.status === 401) {
-    clearSession();
-    window.location.href = "/login";
-    throw new Error("No autenticado");
+  if ((res.status === 401 || res.status === 403) && handleSessionExpired(path)) {
+    throw new Error("Sesión expirada");
   }
 
   if (res.status === 204) return undefined as T;
@@ -168,11 +185,22 @@ export const auth = {
     setupToken: string;
     username: string;
     password: string;
-    profileImageUrl?: string;
   }) =>
     apiFetch<LoginResponse>("/auth/setup-profile", {
       method: "POST",
       body: JSON.stringify(data),
+    }),
+
+  forgotPassword: (email: string) =>
+    apiFetch<{ message: string }>("/auth/forgot-password", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    }),
+
+  resetPassword: (token: string, password: string) =>
+    apiFetch<{ message: string }>("/auth/reset-password", {
+      method: "POST",
+      body: JSON.stringify({ token, password }),
     }),
 };
 
@@ -222,6 +250,7 @@ export const accounts = {
     description?: string;
     balance?: string;
     currency?: string;
+    savings?: boolean;
   }) =>
     apiFetch<AccountDTO>("/accounts", { method: "POST", body: JSON.stringify(data) }),
   update: (
@@ -233,6 +262,7 @@ export const accounts = {
       description: string;
       balance: string;
       currency: string;
+      savings: boolean;
     }>,
   ) =>
     apiFetch<AccountDTO>(`/accounts/${id}`, { method: "PUT", body: JSON.stringify(data) }),
@@ -335,15 +365,16 @@ export interface CreateTransactionDTO {
   amount: string;
   date: string;
   description?: string;
-  type: "INCOME" | "EXPENSE";
+  type: TransactionType;
   accountId: string;
-  categoryId: string;
+  transferToAccountId?: string;
+  categoryId?: string;
 }
 
 export type TransactionSortBy = "date" | "amount" | "createdAt";
 
 export interface TransactionFilters {
-  type?: "INCOME" | "EXPENSE";
+  type?: TransactionType;
   accountId?: string;
   categoryId?: string;
   fromDate?: string;   // ISO datetime: 2026-04-01T00:00:00
@@ -406,11 +437,29 @@ export const transactions = {
 
 export type ChatRole = "USER" | "ASSISTANT" | "SYSTEM";
 
-export interface ChatMessageDTO {
+export type ChatActionType = "CREATE_EXPENSE" | "CREATE_INCOME" | "CREATE_TRANSFER";
+export type ChatActionStatus = "PENDING" | "CONFIRMED" | "REJECTED" | "FAILED";
+
+export interface PendingActionDTO {
   id: string;
+  type: ChatActionType;
+  summary: string;
+  payload: Record<string, unknown>;
+  status: ChatActionStatus;
+  resultMessage: string | null;
+  createdAt: string;
+  resolvedAt: string | null;
+}
+
+export interface ChatMessageDTO {
+  messageId?: string;
+  /** Compat: backend devuelve `messageId` en respuesta de send pero `id` en getConversation. */
+  id?: string;
+  conversationId?: string;
   role: ChatRole;
   content: string;
   createdAt: string;
+  pendingActions?: PendingActionDTO[];
 }
 
 export interface ChatConversationDTO {
@@ -440,6 +489,10 @@ export const chat = {
     apiFetch<void>(`/chat/conversations/${id}`, { method: "DELETE" }),
   reindex: () =>
     apiFetch<void>("/chat/index", { method: "POST" }),
+  confirmAction: (actionId: string) =>
+    apiFetch<PendingActionDTO>(`/chat/actions/${actionId}/confirm`, { method: "POST" }),
+  rejectAction: (actionId: string) =>
+    apiFetch<PendingActionDTO>(`/chat/actions/${actionId}/reject`, { method: "POST" }),
 };
 
 // ─── Wishlist ─────────────────────────────────────────────────────────────────
@@ -487,12 +540,150 @@ export const wishlist = {
   remove: (id: string) => apiFetch<void>(`/wishlist/${id}`, { method: "DELETE" }),
 };
 
+// ─── Debts ────────────────────────────────────────────────────────────────────
+
+export type DebtStatus = "ACTIVE" | "PAID_OFF" | "IN_DEFAULT";
+
+export interface DebtDTO {
+  id: string;
+  name: string;
+  description: string | null;
+  creditor: string | null;
+  principal: string;
+  currentBalance: string;
+  annualRate: string;
+  monthlyRate: string;
+  minimumPayment: string;
+  progressPercentage: string;
+  startDate: string | null;
+  status: DebtStatus;
+  createdAt: string;
+  userId: string;
+}
+
+export interface CreateDebtDTO {
+  name: string;
+  description?: string;
+  creditor?: string;
+  principal: string;
+  currentBalance?: string;
+  annualRate: string;
+  minimumPayment: string;
+  startDate?: string;
+}
+
+export interface UpdateDebtDTO {
+  name?: string;
+  description?: string;
+  creditor?: string;
+  principal?: string;
+  currentBalance?: string;
+  annualRate?: string;
+  minimumPayment?: string;
+  startDate?: string;
+  status?: DebtStatus;
+}
+
+export interface DebtPayoffOrderDTO {
+  debtId: string;
+  name: string;
+  /** -1 cuando la deuda no se liquida dentro del horizonte simulado. */
+  payoffMonth: number;
+  interestPaid: string;
+}
+
+export interface MonthlyBalancePoint {
+  month: number;
+  balance: string;
+  interestThisMonth: string;
+}
+
+export type PayoffStrategy = "MINIMUM_ONLY" | "SNOWBALL" | "AVALANCHE";
+
+export interface PayoffPlanDTO {
+  strategy: PayoffStrategy;
+  monthlyTotal: string;
+  monthsToFreedom: number;
+  totalPaid: string;
+  totalInterest: string;
+  order: DebtPayoffOrderDTO[];
+  trajectory: MonthlyBalancePoint[];
+}
+
+export interface StrategyComparisonDTO {
+  monthlyBudget: string;
+  totalMinimum: string;
+  extraBudget: string;
+  minimumOnly: PayoffPlanDTO;
+  snowball: PayoffPlanDTO;
+  avalanche: PayoffPlanDTO;
+  recommended: PayoffStrategy;
+  interestSavedVsMinimum: string;
+  monthsSavedVsMinimum: number;
+}
+
+export const debts = {
+  list: (params?: { status?: DebtStatus }) => {
+    const qs = new URLSearchParams();
+    if (params?.status) qs.set("status", params.status);
+    const q = qs.toString();
+    return apiFetch<DebtDTO[]>(`/debts${q ? `?${q}` : ""}`);
+  },
+  getById: (id: string) => apiFetch<DebtDTO>(`/debts/${id}`),
+  create: (data: CreateDebtDTO) =>
+    apiFetch<DebtDTO>("/debts", { method: "POST", body: JSON.stringify(data) }),
+  update: (id: string, data: UpdateDebtDTO) =>
+    apiFetch<DebtDTO>(`/debts/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  remove: (id: string) => apiFetch<void>(`/debts/${id}`, { method: "DELETE" }),
+  compareStrategies: (extraBudget?: string) => {
+    const qs = extraBudget ? `?extraBudget=${encodeURIComponent(extraBudget)}` : "";
+    return apiFetch<StrategyComparisonDTO>(`/debts/strategies${qs}`);
+  },
+};
+
+// ─── User Documents (RAG privado) ────────────────────────────────────────────
+
+export type DocumentStatus = "PROCESSING" | "READY" | "FAILED";
+
+export interface UserDocumentDTO {
+  id: string;
+  name: string;
+  contentType: string | null;
+  sizeBytes: number | null;
+  chunkCount: number | null;
+  status: DocumentStatus;
+  errorMessage: string | null;
+  createdAt: string;
+}
+
+export const documents = {
+  list: () => apiFetch<UserDocumentDTO[]>("/documents"),
+
+  upload: async (file: File): Promise<UserDocumentDTO> => {
+    const token = getToken();
+    const form = new FormData();
+    form.append("file", file);
+    const res = await fetch(`${BASE_URL}/documents`, {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.message ?? `HTTP ${res.status}`);
+    }
+    return res.json();
+  },
+
+  remove: (id: string) =>
+    apiFetch<void>(`/documents/${id}`, { method: "DELETE" }),
+};
+
 // ─── Users ────────────────────────────────────────────────────────────────────
 
 export interface UpdateUserDTO {
   username?: string;
   monthlySavingsGoal?: string;
-  profileImageUrl?: string;
 }
 
 export const users = {
@@ -547,8 +738,15 @@ export const admin = {
 
 // ─── Storage ──────────────────────────────────────────────────────────────────
 
+export interface UploadResult {
+  /** Identificador interno del archivo en storage; lo que se persiste en la DB. */
+  key: string;
+  /** URL prefirmado para preview inmediato (caduca a las ~1h). */
+  url: string;
+}
+
 export const storage = {
-  upload: async (file: File, folder = "uploads"): Promise<string> => {
+  upload: async (file: File, folder = "uploads"): Promise<UploadResult> => {
     const token = getToken();
     const form = new FormData();
     form.append("file", file);
@@ -563,7 +761,7 @@ export const storage = {
       throw new Error(body.message ?? `HTTP ${res.status}`);
     }
     const data = await res.json();
-    return data.url as string;
+    return { key: data.key as string, url: data.url as string };
   },
 };
 

@@ -193,7 +193,7 @@ export default function Deseos() {
         <motion.div
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-secondary rounded-xl border border-white/[0.04] p-2.5 flex items-center gap-3 flex-wrap"
+          className="bg-secondary rounded-xl border border-white/[0.04] p-2.5 flex flex-col sm:flex-row sm:items-center sm:flex-wrap gap-3"
         >
           <div className="relative w-full sm:w-[280px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
@@ -214,20 +214,20 @@ export default function Deseos() {
             )}
           </div>
 
-          <div className="flex-1" />
+          <div className="hidden sm:block flex-1" />
 
-          <div className="flex items-center gap-0.5 bg-black/20 rounded-lg p-0.5 border border-white/[0.04]">
+          <div className="flex items-center gap-0.5 bg-black/20 rounded-lg p-0.5 border border-white/[0.04] w-full sm:w-auto overflow-x-auto no-scrollbar">
             {STATUS_OPTIONS.map((o) => (
               <button
                 key={o.value}
                 onClick={() => setStatusFilter(o.value)}
-                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${
                   statusFilter === o.value
                     ? "bg-white/10 text-white"
                     : "text-gray-400 hover:text-white"
                 }`}
               >
-                <span className={`w-1.5 h-1.5 rounded-full ${o.dot}`} />
+                <span className={`w-1.5 h-1.5 rounded-full ${o.dot} flex-shrink-0`} />
                 {o.label}
               </button>
             ))}
@@ -236,7 +236,7 @@ export default function Deseos() {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortBy)}
-            className="bg-black/20 text-white px-3 py-2 rounded-lg border border-white/[0.04] text-xs font-medium cursor-pointer focus:outline-none focus:border-cyan-500/40 appearance-none"
+            className="bg-black/20 text-white px-3 py-2 rounded-lg border border-white/[0.04] text-xs font-medium cursor-pointer focus:outline-none focus:border-cyan-500/40 appearance-none self-end sm:self-auto"
           >
             {SORT_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>Orden: {o.label}</option>

@@ -77,9 +77,17 @@ export default function Login() {
 
             {/* Password */}
             <div>
-              <label className="block text-sm text-gray-400 mb-1.5">
-                Contraseña
-              </label>
+              <div className="flex items-baseline justify-between mb-1.5">
+                <label className="block text-sm text-gray-400">
+                  Contraseña
+                </label>
+                <a
+                  href="/forgot-password"
+                  className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors"
+                >
+                  ¿Olvidaste tu contraseña?
+                </a>
+              </div>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
                 <input

@@ -96,7 +96,7 @@ export default function Chat() {
       );
     } catch (e: any) {
       setError(e.message ?? "Error enviando mensaje");
-      setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
+      setMessages((prev) => prev.filter((m) => (m.messageId ?? m.id) !== optimistic.id));
     } finally {
       setTyping(false);
     }
@@ -207,7 +207,7 @@ export default function Chat() {
               ) : (
                 <>
                   {messages.map((msg) => (
-                    <ChatMessageBubble key={msg.id} msg={msg} />
+                    <ChatMessageBubble key={msg.messageId ?? msg.id} msg={msg} />
                   ))}
                   {typing && <ChatTypingIndicator />}
                   <div ref={messagesEndRef} />
