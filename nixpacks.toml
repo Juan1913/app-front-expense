@@ -6,12 +6,13 @@ nixPkgs = ["nodejs_20"]
 cmds = ["npm install"]
 
 [phases.build]
-cmds = ["npm run build"]
+cmds = [
+  "printf 'VITE_API_URL=%s\\n' \"$VITE_API_URL\" > .env.production",
+  "npm run build"
+]
 
 [start]
 cmd = "npm run start"
 
-[build]
-  # Forzar Node.js 20
-  [build.env]
-  NODE_VERSION = "20"
+[variables]
+NODE_VERSION = "20"
