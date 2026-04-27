@@ -193,8 +193,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   return (
-    <div className="min-h-screen bg-primary p-2 sm:p-4">
-      <header className="bg-secondary rounded-2xl px-3 sm:px-4 py-3 sm:py-4 mb-3 sm:mb-4 h-14 sm:h-16 flex items-center justify-between gap-2">
+    <div className="min-h-screen md:h-screen md:overflow-hidden bg-primary p-2 sm:p-4 md:flex md:flex-col">
+      <header className="bg-secondary rounded-2xl px-3 sm:px-4 py-3 sm:py-4 mb-3 sm:mb-4 h-14 sm:h-16 flex items-center justify-between gap-2 flex-shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           <button
             type="button"
@@ -386,14 +386,14 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
       )}
 
-      <div className="flex md:gap-4 md:h-[calc(100vh-8rem)]">
+      <div className="flex md:flex-1 md:min-h-0 md:gap-4">
         <Sidebar
           collapsed={sidebarCollapsed}
           onToggle={toggleSidebar}
           mobileOpen={mobileMenuOpen}
           onMobileClose={() => setMobileMenuOpen(false)}
         />
-        <div className="flex-1 min-w-0 bg-primary md:rounded-2xl md:overflow-auto">
+        <div className="flex-1 min-w-0 bg-primary md:rounded-2xl md:overflow-y-auto">
           <div className="p-3 sm:p-5 text-white">{children}</div>
         </div>
       </div>

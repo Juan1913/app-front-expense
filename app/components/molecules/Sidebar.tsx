@@ -84,11 +84,11 @@ export function Sidebar({ collapsed, onToggle, mobileOpen = false, onMobileClose
       <div
         onMouseEnter={handleEnter}
         onMouseLeave={handleLeave}
-        className={`hidden md:flex bg-secondary rounded-2xl flex-col flex-shrink-0 transition-[width] duration-300 ease-in-out ${
+        className={`hidden md:flex bg-secondary rounded-2xl flex-col flex-shrink-0 min-h-0 transition-[width] duration-300 ease-in-out ${
           effectiveCollapsed ? "w-[72px]" : "w-64"
         }`}
       >
-        <nav className={`flex-1 ${effectiveCollapsed ? "px-2 py-4" : "p-4"}`}>
+        <nav className={`flex-1 min-h-0 overflow-y-auto no-scrollbar ${effectiveCollapsed ? "px-2 py-4" : "p-4"}`}>
           <div className="space-y-1.5">
             {navigationItems.map((item) => (
               <NavItem
