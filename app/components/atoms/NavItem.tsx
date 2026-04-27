@@ -16,13 +16,13 @@ export function NavItem({ icon: Icon, label, isActive, collapsed = false, onClic
       title={collapsed ? label : undefined}
       className={cn(
         "flex items-center rounded-lg cursor-pointer transition-all duration-200 group relative",
-        collapsed ? "justify-center w-10 h-10 mx-auto" : "gap-3 px-4 py-3",
+        collapsed ? "justify-center w-9 h-9 mx-auto" : "gap-2.5 px-3 py-2 text-sm",
         isActive
           ? "text-white bg-gray-700"
           : "text-gray-400 hover:text-white hover:bg-gray-700"
       )}
     >
-      <Icon className="h-5 w-5 flex-shrink-0" />
+      <Icon className={cn("flex-shrink-0", collapsed ? "h-[18px] w-[18px]" : "h-[17px] w-[17px]")} />
       {!collapsed && <span className="truncate">{label}</span>}
 
       {/* Tooltip on hover when collapsed */}

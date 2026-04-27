@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { NavItem } from "~/components/atoms";
 import {
   Home, Edit3, CreditCard, RefreshCw, Gift, BarChart3, Settings, MessageCircle, Users,
-  Target, Trash2, ChevronLeft, ChevronRight, FlaskConical, Sparkles, Coins, X, Zap, FileText,
+  Target, Trash2, ChevronLeft, ChevronRight, ChevronDown, FlaskConical, Sparkles, Coins, X, Zap, FileText,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useLocation, useNavigate } from "react-router";
@@ -51,6 +51,37 @@ export function Sidebar({ collapsed, onToggle, mobileOpen = false, onMobileClose
   const leaveTimer = useRef<number | null>(null);
   const effectiveCollapsed = collapsed && !isHovered;
 
+  // Detección de overflow vertical en el nav del sidebar (escritorio)
+  const navRef = useRef<HTMLElement | null>(null);
+  const [scrollState, setScrollState] = useState({ overflow: false, atBottom: false });
+
+  function recomputeScroll() {
+    const el = navRef.current;
+    if (!el) return;
+    const overflow = el.scrollHeight > el.clientHeight + 1;
+    const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
+    setScrollState((prev) =>
+      prev.overflow === overflow && prev.atBottom === atBottom ? prev : { overflow, atBottom }
+    );
+  }
+
+  useLayoutEffect(() => {
+    recomputeScroll();
+  }, [effectiveCollapsed, isAdmin]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const el = navRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(recomputeScroll);
+    ro.observe(el);
+    window.addEventListener("resize", recomputeScroll);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", recomputeScroll);
+    };
+  }, []);
+
   function handleEnter() {
     if (leaveTimer.current) {
       clearTimeout(leaveTimer.current);
@@ -84,12 +115,16 @@ export function Sidebar({ collapsed, onToggle, mobileOpen = false, onMobileClose
       <div
         onMouseEnter={handleEnter}
         onMouseLeave={handleLeave}
-        className={`hidden md:flex bg-secondary rounded-2xl flex-col flex-shrink-0 min-h-0 transition-[width] duration-300 ease-in-out ${
-          effectiveCollapsed ? "w-[72px]" : "w-64"
+        className={`hidden md:flex bg-secondary rounded-2xl flex-col flex-shrink-0 min-h-0 relative transition-[width] duration-300 ease-in-out ${
+          effectiveCollapsed ? "w-[72px]" : "w-60"
         }`}
       >
-        <nav className={`flex-1 min-h-0 overflow-y-auto no-scrollbar ${effectiveCollapsed ? "px-2 py-4" : "p-4"}`}>
-          <div className="space-y-1.5">
+        <nav
+          ref={navRef}
+          onScroll={recomputeScroll}
+          className={`flex-1 min-h-0 overflow-y-auto no-scrollbar relative ${effectiveCollapsed ? "px-2 py-3" : "p-3"}`}
+        >
+          <div className="space-y-1">
             {navigationItems.map((item) => (
               <NavItem
                 key={item.href}
@@ -103,14 +138,14 @@ export function Sidebar({ collapsed, onToggle, mobileOpen = false, onMobileClose
           </div>
 
           {isAdmin && (
-            <div className="mt-6">
+            <div className="mt-4">
               {!effectiveCollapsed && (
-                <p className="text-[10px] text-gray-500 uppercase tracking-widest px-3 mb-2">
+                <p className="text-[10px] text-gray-500 uppercase tracking-widest px-3 mb-1.5">
                   Administración
                 </p>
               )}
-              {effectiveCollapsed && <div className="h-px bg-white/[0.06] mx-2 my-3" />}
-              <div className="space-y-1.5">
+              {effectiveCollapsed && <div className="h-px bg-white/[0.06] mx-2 my-2" />}
+              <div className="space-y-1">
                 {adminItems.map((item) => (
                   <NavItem
                     key={item.href}
@@ -124,10 +159,28 @@ export function Sidebar({ collapsed, onToggle, mobileOpen = false, onMobileClose
               </div>
             </div>
           )}
+
+          {/* Indicador de "hay más abajo" — sticky en el fondo del nav */}
+          {scrollState.overflow && !scrollState.atBottom && (
+            <div
+              className={`sticky bottom-0 flex justify-center pointer-events-none bg-gradient-to-t from-secondary via-secondary/95 to-transparent pt-6 pb-1 ${
+                effectiveCollapsed ? "-mx-2 -mb-3" : "-mx-3 -mb-3"
+              }`}
+            >
+              <button
+                type="button"
+                onClick={() => navRef.current?.scrollBy({ top: 120, behavior: "smooth" })}
+                aria-label="Ver más opciones"
+                className="pointer-events-auto flex items-center justify-center w-6 h-6 rounded-full bg-cyan-500/20 ring-1 ring-cyan-500/40 text-cyan-300 animate-bounce hover:bg-cyan-500/30 transition-colors"
+              >
+                <ChevronDown className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
         </nav>
 
         {/* Footer: Mi cuenta + toggle */}
-        <div className={`border-t border-white/[0.06] ${effectiveCollapsed ? "px-2 py-3" : "p-4"} space-y-1.5`}>
+        <div className={`border-t border-white/[0.06] ${effectiveCollapsed ? "px-2 py-2" : "p-3"} space-y-1 flex-shrink-0`}>
           <NavItem
             icon={Settings}
             label="Mi cuenta"
