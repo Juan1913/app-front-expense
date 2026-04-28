@@ -633,6 +633,8 @@ export const wishlist = {
 
 export type DebtStatus = "ACTIVE" | "PAID_OFF" | "IN_DEFAULT";
 
+export type DebtQuality = "GOOD" | "MEDIUM" | "BAD";
+
 export interface DebtDTO {
   id: string;
   name: string;
@@ -648,6 +650,40 @@ export interface DebtDTO {
   status: DebtStatus;
   createdAt: string;
   userId: string;
+  qualityBadge: DebtQuality;
+  qualityHint: string;
+}
+
+export interface DebtPaymentDTO {
+  id: string;
+  debtId: string;
+  amountTotal: string;
+  amountInterest: string;
+  amountCapital: string;
+  balanceAfter: string;
+  paymentDate: string;
+  accountId: string | null;
+  accountName: string | null;
+  transactionId: string | null;
+  createdAt: string;
+}
+
+export interface DebtSummaryDTO {
+  debtId: string;
+  totalCapitalPaid: string;
+  totalInterestPaid: string;
+  currentBalance: string;
+  nextMonthInterestEstimate: string;
+  capitalProgressPercentage: string;
+  paymentsCount: number;
+  qualityBadge: DebtQuality;
+  qualityHint: string;
+}
+
+export interface CreateDebtPaymentDTO {
+  amount: string;
+  accountId: string;
+  paymentDate?: string;
 }
 
 export interface CreateDebtDTO {
@@ -728,6 +764,15 @@ export const debts = {
     const qs = extraBudget ? `?extraBudget=${encodeURIComponent(extraBudget)}` : "";
     return apiFetch<StrategyComparisonDTO>(`/debts/strategies${qs}`);
   },
+  recordPayment: (id: string, data: CreateDebtPaymentDTO) =>
+    apiFetch<DebtPaymentDTO>(`/debts/${id}/payments`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  listPayments: (id: string) =>
+    apiFetch<DebtPaymentDTO[]>(`/debts/${id}/payments`),
+  summary: (id: string) =>
+    apiFetch<DebtSummaryDTO>(`/debts/${id}/summary`),
 };
 
 export type DocumentStatus = "PROCESSING" | "READY" | "FAILED";

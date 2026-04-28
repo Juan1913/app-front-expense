@@ -3,15 +3,17 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Loader2, Plus, X, Trash2, Edit3, AlertTriangle,
   TrendingDown, Percent, Wallet, Coins, Snowflake, Mountain,
-  CheckCircle2, Sparkles,
+  CheckCircle2, Sparkles, DollarSign, History, ShieldCheck, ShieldAlert,
 } from "lucide-react";
 import {
   Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import { useEffect, useMemo, useState } from "react";
 import {
-  debts, formatCOP, formatCOPShort,
+  debts, accounts, formatCOP, formatCOPShort,
   type DebtDTO, type CreateDebtDTO, type StrategyComparisonDTO, type PayoffPlanDTO,
+  type DebtPaymentDTO, type DebtSummaryDTO, type DebtQuality,
+  type AccountDTO,
 } from "~/services/api";
 
 interface DebtFormState {
@@ -46,6 +48,10 @@ export default function Deudas() {
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<DebtDTO | null>(null);
 
+  const [accountList, setAccountList] = useState<AccountDTO[]>([]);
+  const [paymentTarget, setPaymentTarget] = useState<DebtDTO | null>(null);
+  const [detailTarget, setDetailTarget] = useState<DebtDTO | null>(null);
+
   function reload() {
     setLoading(true);
     debts.list()
@@ -54,6 +60,10 @@ export default function Deudas() {
       .finally(() => setLoading(false));
   }
   useEffect(reload, []);
+
+  useEffect(() => {
+    accounts.list().then(setAccountList).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const t = setTimeout(() => setExtraDebounced(extraBudget), 250);
@@ -220,6 +230,8 @@ export default function Deudas() {
               {list.map((d) => (
                 <DebtRow
                   key={d.id} debt={d}
+                  onPay={() => setPaymentTarget(d)}
+                  onDetail={() => setDetailTarget(d)}
                   onEdit={() => openEdit(d)}
                   onDelete={() => setDeleteTarget(d)}
                 />
@@ -243,6 +255,18 @@ export default function Deudas() {
         target={deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
+      />
+
+      <PaymentModal
+        target={paymentTarget}
+        accounts={accountList}
+        onClose={() => setPaymentTarget(null)}
+        onPaid={() => { setPaymentTarget(null); reload(); }}
+      />
+
+      <DebtDetailDrawer
+        target={detailTarget}
+        onClose={() => setDetailTarget(null)}
       />
     </DashboardLayout>
   );
@@ -268,7 +292,15 @@ function KpiCard({ icon, gradient, label, value, subtext }: {
   );
 }
 
-function DebtRow({ debt, onEdit, onDelete }: { debt: DebtDTO; onEdit: () => void; onDelete: () => void }) {
+function DebtRow({
+  debt, onPay, onDetail, onEdit, onDelete,
+}: {
+  debt: DebtDTO;
+  onPay: () => void;
+  onDetail: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
   const balance = parseFloat(debt.currentBalance);
   const principal = parseFloat(debt.principal);
   const progress = Math.max(0, Math.min(100, (1 - balance / principal) * 100));
@@ -285,6 +317,7 @@ function DebtRow({ debt, onEdit, onDelete }: { debt: DebtDTO; onEdit: () => void
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="text-white font-semibold text-base truncate">{debt.name}</h3>
             {debt.creditor && <span className="text-[11px] text-gray-500">· {debt.creditor}</span>}
+            <QualityBadge quality={debt.qualityBadge} />
             {paid && (
               <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-emerald-300 bg-emerald-500/15 px-1.5 py-0.5 rounded">
                 <CheckCircle2 className="h-3 w-3" /> Saldada
@@ -317,6 +350,16 @@ function DebtRow({ debt, onEdit, onDelete }: { debt: DebtDTO; onEdit: () => void
         </div>
 
         <div className="flex flex-col gap-1.5">
+          {!paid && (
+            <button onClick={onPay} title="Registrar pago"
+              className="p-2 text-emerald-300 hover:text-emerald-200 hover:bg-emerald-500/15 rounded-lg transition-colors">
+              <DollarSign className="h-4 w-4" />
+            </button>
+          )}
+          <button onClick={onDetail} title="Ver detalle e historial"
+            className="p-2 text-cyan-300 hover:text-cyan-200 hover:bg-cyan-500/10 rounded-lg transition-colors">
+            <History className="h-4 w-4" />
+          </button>
           <button onClick={onEdit} title="Editar"
             className="p-2 text-gray-400 hover:text-white hover:bg-white/[0.06] rounded-lg transition-colors">
             <Edit3 className="h-4 w-4" />
@@ -327,7 +370,33 @@ function DebtRow({ debt, onEdit, onDelete }: { debt: DebtDTO; onEdit: () => void
           </button>
         </div>
       </div>
+
+      {!paid && debt.qualityHint && (
+        <p className="text-[11px] text-gray-500 mt-2 italic">{debt.qualityHint}</p>
+      )}
     </motion.div>
+  );
+}
+
+function QualityBadge({ quality }: { quality: DebtQuality }) {
+  if (quality === "GOOD") {
+    return (
+      <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-emerald-300 bg-emerald-500/15 px-1.5 py-0.5 rounded">
+        <ShieldCheck className="h-3 w-3" /> Buena
+      </span>
+    );
+  }
+  if (quality === "BAD") {
+    return (
+      <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-rose-300 bg-rose-500/15 px-1.5 py-0.5 rounded">
+        <ShieldAlert className="h-3 w-3" /> Cara
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-amber-300 bg-amber-500/15 px-1.5 py-0.5 rounded">
+      <AlertTriangle className="h-3 w-3" /> Atenta
+    </span>
   );
 }
 
@@ -753,4 +822,278 @@ function formatMonths(m: number): string {
   const rem = m % 12;
   if (rem === 0) return `${y} ${y === 1 ? "año" : "años"}`;
   return `${y}a ${rem}m`;
+}
+
+function PaymentModal({
+  target, accounts, onClose, onPaid,
+}: {
+  target: DebtDTO | null;
+  accounts: AccountDTO[];
+  onClose: () => void;
+  onPaid: () => void;
+}) {
+  const [amount, setAmount] = useState("");
+  const [accountId, setAccountId] = useState("");
+  const [paymentDate, setPaymentDate] = useState(new Date().toISOString().slice(0, 10));
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (target) {
+      setAmount("");
+      setAccountId("");
+      setPaymentDate(new Date().toISOString().slice(0, 10));
+      setErr(null);
+    }
+  }, [target?.id]);
+
+  if (!target) return null;
+
+  const balance = parseFloat(target.currentBalance);
+  const monthlyRate = parseFloat(target.monthlyRate);
+  const estimatedMonthlyInterest = balance * monthlyRate;
+  const amt = parseFloat(amount || "0");
+  const interestEstimate = Math.min(amt, estimatedMonthlyInterest);
+  const capitalEstimate = Math.max(0, amt - interestEstimate);
+
+  async function submit() {
+    if (!amount || !accountId) return;
+    setBusy(true); setErr(null);
+    try {
+      await debts.recordPayment(target!.id, {
+        amount,
+        accountId,
+        paymentDate,
+      });
+      onPaid();
+    } catch (e: any) {
+      setErr(e.message ?? "Error al registrar pago");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
+          onClick={(e) => e.stopPropagation()}
+          className="bg-[#141418] border border-white/[0.08] rounded-2xl w-full max-w-md flex flex-col shadow-2xl max-h-[90vh]"
+        >
+          <div className="flex items-center justify-between p-5 border-b border-white/[0.06]">
+            <div className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5 text-emerald-400" />
+              <h2 className="text-lg font-semibold text-white">Registrar pago</h2>
+            </div>
+            <button onClick={onClose} className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/[0.06] transition-colors">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          <div className="p-5 overflow-y-auto space-y-4">
+            <div className="bg-secondary border border-white/[0.04] rounded-xl p-3">
+              <div className="text-[11px] text-gray-500 uppercase tracking-widest">Deuda</div>
+              <div className="text-white font-semibold">{target.name}</div>
+              <div className="text-xs text-gray-500 mt-0.5">Saldo actual: {formatCOP(target.currentBalance)}</div>
+            </div>
+
+            {err && (
+              <div className="p-2.5 bg-red-900/30 border border-red-700/50 rounded-lg text-red-300 text-xs">{err}</div>
+            )}
+
+            <div>
+              <label className="text-xs text-gray-400 uppercase tracking-widest font-semibold mb-1.5 block">Monto a pagar *</label>
+              <input
+                type="number" min="0" step="1000"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder={target.minimumPayment}
+                className="w-full bg-secondary text-white px-3 py-2.5 rounded-xl border border-white/[0.06] focus:outline-none focus:border-cyan-500/40 text-sm tabular-nums"
+              />
+              <div className="text-[10px] text-gray-500 mt-1">
+                Pago mínimo de referencia: {formatCOP(target.minimumPayment)}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs text-gray-400 uppercase tracking-widest font-semibold mb-1.5 block">Cuenta origen *</label>
+              <select
+                value={accountId}
+                onChange={(e) => setAccountId(e.target.value)}
+                className="w-full bg-secondary text-white px-3 py-2.5 rounded-xl border border-white/[0.06] focus:outline-none focus:border-cyan-500/40 text-sm"
+              >
+                <option value="">Seleccioná una cuenta</option>
+                {accounts.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name} {a.bank ? `· ${a.bank}` : ""} ({formatCOPShort(a.balance)})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="text-xs text-gray-400 uppercase tracking-widest font-semibold mb-1.5 block">Fecha del pago</label>
+              <input
+                type="date"
+                value={paymentDate}
+                onChange={(e) => setPaymentDate(e.target.value)}
+                className="w-full bg-secondary text-white px-3 py-2.5 rounded-xl border border-white/[0.06] focus:outline-none focus:border-cyan-500/40 text-sm"
+              />
+            </div>
+
+            {amt > 0 && (
+              <div className="bg-cyan-500/5 border border-cyan-500/20 rounded-xl p-3 space-y-1.5">
+                <div className="text-[10px] text-cyan-300 uppercase tracking-widest font-semibold">Estimación del pago</div>
+                <Row k="Pago total" v={formatCOP(amt)} />
+                <Row k="Interés (estimado)" v={`−${formatCOP(interestEstimate)}`} vClass="text-rose-300" />
+                <Row k="Capital (reduce saldo)" v={`−${formatCOP(capitalEstimate)}`} vClass="text-emerald-300" />
+                <div className="border-t border-white/[0.06] pt-1.5 mt-1.5">
+                  <Row k="Saldo después" v={formatCOP(Math.max(0, balance - capitalEstimate))} bold />
+                </div>
+                <p className="text-[10px] text-gray-500 italic mt-2">
+                  Estimación basada en tu tasa mensual. El cálculo real ajusta por días desde tu último pago.
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center justify-end gap-2 p-4 border-t border-white/[0.06]">
+            <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm text-gray-300 hover:text-white hover:bg-white/[0.04] transition-colors">
+              Cancelar
+            </button>
+            <button
+              onClick={submit}
+              disabled={busy || !amount || !accountId || amt <= 0}
+              className="flex items-center gap-2 px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-sm font-semibold hover:opacity-90 disabled:opacity-40 transition-opacity"
+            >
+              {busy && <Loader2 className="h-4 w-4 animate-spin" />}
+              Confirmar pago
+            </button>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
+function Row({ k, v, vClass, bold }: { k: string; v: string; vClass?: string; bold?: boolean }) {
+  return (
+    <div className="flex items-center justify-between text-xs">
+      <span className="text-gray-400">{k}</span>
+      <span className={`tabular-nums ${bold ? "text-white font-bold" : ""} ${vClass ?? "text-gray-200"}`}>{v}</span>
+    </div>
+  );
+}
+
+function DebtDetailDrawer({ target, onClose }: { target: DebtDTO | null; onClose: () => void }) {
+  const [summary, setSummary] = useState<DebtSummaryDTO | null>(null);
+  const [payments, setPayments] = useState<DebtPaymentDTO[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!target) return;
+    setLoading(true);
+    Promise.all([
+      debts.summary(target.id),
+      debts.listPayments(target.id),
+    ])
+      .then(([s, p]) => { setSummary(s); setPayments(p); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [target?.id]);
+
+  return (
+    <AnimatePresence>
+      {target && (
+        <motion.div
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex justify-end bg-black/70 backdrop-blur-sm"
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
+            transition={{ type: "spring", damping: 30, stiffness: 300 }}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md bg-[#0f0f12] border-l border-white/[0.06] h-full overflow-y-auto"
+          >
+            <div className="sticky top-0 z-10 bg-[#0f0f12]/95 backdrop-blur border-b border-white/[0.06] px-5 py-4 flex items-center justify-between">
+              <h2 className="text-white font-semibold">{target.name}</h2>
+              <button onClick={onClose} className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/[0.06] transition-colors">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              {loading ? (
+                <div className="flex justify-center py-10">
+                  <Loader2 className="h-5 w-5 text-gray-500 animate-spin" />
+                </div>
+              ) : summary && (
+                <>
+                  <div className="bg-secondary border border-white/[0.04] rounded-2xl p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <QualityBadge quality={summary.qualityBadge} />
+                      <span className="text-xs text-gray-400">{(parseFloat(target.annualRate) * 100).toFixed(2)}% E.A.</span>
+                    </div>
+                    <p className="text-sm text-gray-300">{summary.qualityHint}</p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <StatBig label="Saldo actual" value={formatCOP(summary.currentBalance)} accent="text-rose-300" />
+                    <StatBig label="% capital pagado" value={`${parseFloat(summary.capitalProgressPercentage).toFixed(1)}%`} accent="text-emerald-300" />
+                    <StatBig label="Capital pagado" value={formatCOP(summary.totalCapitalPaid)} accent="text-emerald-300" />
+                    <StatBig label="Intereses pagados" value={formatCOP(summary.totalInterestPaid)} accent="text-rose-300" />
+                    <StatBig label="Próximo mes interés" value={formatCOP(summary.nextMonthInterestEstimate)} accent="text-amber-300" />
+                    <StatBig label="Pagos registrados" value={String(summary.paymentsCount)} accent="text-white" />
+                  </div>
+
+                  <div className="bg-secondary border border-white/[0.04] rounded-2xl">
+                    <div className="px-4 py-3 border-b border-white/[0.04]">
+                      <h3 className="text-sm font-semibold text-white">Historial de pagos</h3>
+                    </div>
+                    {payments.length === 0 ? (
+                      <p className="text-xs text-gray-500 px-4 py-6 text-center">Aún no registrás pagos para esta deuda</p>
+                    ) : (
+                      <div className="divide-y divide-white/[0.04]">
+                        {payments.map((p) => (
+                          <div key={p.id} className="px-4 py-3">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-sm text-white tabular-nums">{formatCOP(p.amountTotal)}</span>
+                              <span className="text-[11px] text-gray-500">
+                                {new Date(p.paymentDate).toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" })}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-3 text-[11px]">
+                              <span className="text-emerald-300 tabular-nums">Capital: {formatCOPShort(p.amountCapital)}</span>
+                              <span className="text-rose-300 tabular-nums">Interés: {formatCOPShort(p.amountInterest)}</span>
+                              {p.accountName && <span className="text-gray-500">· {p.accountName}</span>}
+                            </div>
+                            <div className="text-[10px] text-gray-600 mt-0.5">Saldo después: {formatCOPShort(p.balanceAfter)}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+function StatBig({ label, value, accent }: { label: string; value: string; accent: string }) {
+  return (
+    <div className="bg-secondary border border-white/[0.04] rounded-xl p-3">
+      <div className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">{label}</div>
+      <div className={`text-lg font-bold tabular-nums ${accent}`}>{value}</div>
+    </div>
+  );
 }
