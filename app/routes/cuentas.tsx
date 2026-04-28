@@ -39,10 +39,14 @@ interface FormState {
   balance: string;
   currency: string;
   savings: boolean;
+  creditCard: boolean;
+  creditLimit: string;
+  annualRate: string;
 }
 
 const emptyForm: FormState = {
-  name: "", bank: "", cardNumber: "", description: "", balance: "0", currency: "COP", savings: false,
+  name: "", bank: "", cardNumber: "", description: "", balance: "0", currency: "COP",
+  savings: false, creditCard: false, creditLimit: "", annualRate: "",
 };
 
 function formatTxDate(dateStr: string) {
@@ -139,6 +143,9 @@ export default function Cuentas() {
       balance: acc.balance,
       currency: acc.currency,
       savings: acc.savings,
+      creditCard: acc.creditCard ?? false,
+      creditLimit: acc.creditLimit ?? "",
+      annualRate: acc.annualRate ?? "",
     });
     setShowModal(true);
   }
@@ -148,9 +155,16 @@ export default function Cuentas() {
     setSaving(true);
     try {
       const payload = {
-        ...form,
+        name: form.name,
+        bank: form.bank,
         cardNumber: form.cardNumber.trim() || undefined,
         description: form.description.trim() || undefined,
+        balance: form.balance,
+        currency: form.currency,
+        savings: form.creditCard ? false : form.savings,
+        creditCard: form.creditCard,
+        creditLimit: form.creditCard && form.creditLimit ? form.creditLimit : undefined,
+        annualRate: form.creditCard && form.annualRate ? form.annualRate : undefined,
       };
       if (editing) {
         const updated = await accounts.update(editing.id, payload);
@@ -500,6 +514,11 @@ function AccountCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
             <p className="text-white font-semibold text-sm truncate">{account.name}</p>
+            {account.creditCard && (
+              <span className="text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded bg-rose-500/15 text-rose-300 flex-shrink-0">
+                Tarjeta
+              </span>
+            )}
             {account.savings && (
               <span className="text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 flex-shrink-0">
                 Ahorro
@@ -507,7 +526,9 @@ function AccountCard({
             )}
           </div>
           <p className="text-gray-500 text-xs mt-0.5 truncate">
-            {account.description || <span className="italic text-gray-600">Sin descripción</span>}
+            {account.creditCard && account.creditLimit
+              ? <>Cupo {formatCOPShort(account.creditLimit)} · usado {(parseFloat(account.balance) / parseFloat(account.creditLimit) * 100).toFixed(0)}%</>
+              : (account.description || <span className="italic text-gray-600">Sin descripción</span>)}
           </p>
         </div>
         <ArrowRight className="h-4 w-4 text-gray-600 group-hover:text-cyan-400 group-hover:translate-x-0.5 transition-all flex-shrink-0" />
@@ -559,7 +580,9 @@ function CardVisual({
 
         <div className="flex items-end justify-between">
           <div>
-            <div className={`uppercase tracking-widest opacity-70 ${size === "large" ? "text-[10px]" : "text-[9px]"}`}>Balance</div>
+            <div className={`uppercase tracking-widest opacity-70 ${size === "large" ? "text-[10px]" : "text-[9px]"}`}>
+              {account.creditCard ? "Deuda" : "Balance"}
+            </div>
             <div className={`font-bold tabular-nums ${size === "large" ? "text-2xl" : "text-xl"}`}>
               {formatCOP(account.balance)}
             </div>
@@ -680,10 +703,13 @@ function CreateEditModal({
                 </Field>
               </div>
 
-              <label className="flex items-start gap-3 p-3 bg-black/20 border border-white/[0.04] rounded-xl cursor-pointer hover:border-amber-500/30 transition-colors">
+              <label className={`flex items-start gap-3 p-3 bg-black/20 border rounded-xl cursor-pointer transition-colors ${
+                form.creditCard ? "border-white/[0.04] opacity-50 cursor-not-allowed" : "border-white/[0.04] hover:border-amber-500/30"
+              }`}>
                 <input
                   type="checkbox"
                   checked={form.savings}
+                  disabled={form.creditCard}
                   onChange={(e) => onChange({ ...form, savings: e.target.checked })}
                   className="mt-0.5 h-4 w-4 accent-amber-500"
                 />
@@ -694,6 +720,48 @@ function CreateEditModal({
                   </p>
                 </div>
               </label>
+
+              <label className={`flex items-start gap-3 p-3 bg-black/20 border rounded-xl cursor-pointer transition-colors ${
+                form.savings ? "border-white/[0.04] opacity-50 cursor-not-allowed" : "border-white/[0.04] hover:border-rose-500/30"
+              }`}>
+                <input
+                  type="checkbox"
+                  checked={form.creditCard}
+                  disabled={form.savings}
+                  onChange={(e) => onChange({ ...form, creditCard: e.target.checked, savings: false })}
+                  className="mt-0.5 h-4 w-4 accent-rose-500"
+                />
+                <div className="flex-1">
+                  <div className="text-sm text-white font-semibold">Tarjeta de crédito</div>
+                  <p className="text-[11px] text-gray-500 mt-0.5">
+                    Las compras suben el saldo (deuda) y los pagos lo bajan. La deuda total se descuenta del patrimonio.
+                  </p>
+                </div>
+              </label>
+
+              {form.creditCard && (
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Cupo total (opcional)">
+                    <input
+                      type="number"
+                      value={form.creditLimit}
+                      onChange={(e) => onChange({ ...form, creditLimit: e.target.value })}
+                      placeholder="Ej. 5000000"
+                      className="input-dark tabular-nums"
+                    />
+                  </Field>
+                  <Field label="Tasa anual (decimal)">
+                    <input
+                      type="number"
+                      step="0.0001"
+                      value={form.annualRate}
+                      onChange={(e) => onChange({ ...form, annualRate: e.target.value })}
+                      placeholder="Ej. 0.28 (28% E.A.)"
+                      className="input-dark tabular-nums"
+                    />
+                  </Field>
+                </div>
+              )}
             </div>
 
             <div className="flex gap-3 mt-6">

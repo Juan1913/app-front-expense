@@ -10,14 +10,12 @@ interface AuthUser {
 }
 
 interface AuthState {
-  token: string | null;
   user: AuthUser | null;
   saveSession: (data: LoginResponse) => void;
   clearSession: () => void;
   isAuthenticated: () => boolean;
 }
 
-// SSR-safe storage: devuelve noop en servidor, localStorage en cliente
 const safeStorage = createJSONStorage(() =>
   typeof window !== "undefined"
     ? localStorage
@@ -31,17 +29,15 @@ const safeStorage = createJSONStorage(() =>
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
-      token: null,
       user: null,
 
       saveSession: (data: LoginResponse) => {
-        const { token, ...user } = data;
-        set({ token, user });
+        set({ user: { userId: data.userId, email: data.email, username: data.username, role: data.role } });
       },
 
-      clearSession: () => set({ token: null, user: null }),
+      clearSession: () => set({ user: null }),
 
-      isAuthenticated: () => !!get().token,
+      isAuthenticated: () => !!get().user,
     }),
     {
       name: "finz-auth",

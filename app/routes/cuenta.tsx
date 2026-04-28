@@ -4,7 +4,7 @@ import { Loader2, Save, Target, LogOut } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { useAuthStore } from "~/store/authStore";
-import { users, formatCOP, type UserDTO, type UpdateUserDTO } from "~/services/api";
+import { users, auth as authApi, formatCOP, type UserDTO, type UpdateUserDTO } from "~/services/api";
 
 export default function Cuenta() {
   const navigate = useNavigate();
@@ -51,7 +51,8 @@ export default function Cuenta() {
     }
   }
 
-  function handleLogout() {
+  async function handleLogout() {
+    try { await authApi.logout(); } catch {}
     clearSession();
     navigate("/login");
   }
