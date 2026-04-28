@@ -23,14 +23,15 @@ import {
   type TransactionDTO, type TransactionSummary,
 } from "~/services/api";
 
-type Period = "1M" | "3M" | "6M" | "12M" | "ALL";
+type Period = "1M" | "3M" | "6M" | "12M" | "ALL" | "CUSTOM";
 
 const PERIODS: { value: Period; label: string }[] = [
-  { value: "1M",  label: "1 mes"   },
-  { value: "3M",  label: "3 meses" },
-  { value: "6M",  label: "6 meses" },
-  { value: "12M", label: "1 año"   },
-  { value: "ALL", label: "Todo"    },
+  { value: "1M",     label: "1 mes"   },
+  { value: "3M",     label: "3 meses" },
+  { value: "6M",     label: "6 meses" },
+  { value: "12M",    label: "1 año"   },
+  { value: "ALL",    label: "Todo"    },
+  { value: "CUSTOM", label: "Personalizado" },
 ];
 
 function toISO(d: Date): string {
@@ -38,12 +39,30 @@ function toISO(d: Date): string {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:00`;
 }
 
-function getPeriodRange(period: Period): {
+function parseInputDate(iso: string, endOfDay: boolean): Date | null {
+  if (!iso) return null;
+  const [y, m, d] = iso.split("-").map(Number);
+  if (!y || !m || !d) return null;
+  return endOfDay ? new Date(y, m - 1, d, 23, 59, 59) : new Date(y, m - 1, d, 0, 0, 0);
+}
+
+function getPeriodRange(
+  period: Period, customFrom?: string, customTo?: string,
+): {
   from: Date | null; to: Date | null;
   prevFrom: Date | null; prevTo: Date | null;
 } {
   const now = new Date();
   if (period === "ALL") return { from: null, to: null, prevFrom: null, prevTo: null };
+  if (period === "CUSTOM") {
+    const from = parseInputDate(customFrom ?? "", false);
+    const to   = parseInputDate(customTo ?? "", true);
+    if (!from || !to) return { from: null, to: null, prevFrom: null, prevTo: null };
+    const spanMs = to.getTime() - from.getTime();
+    const prevTo = new Date(from.getTime() - 1);
+    const prevFrom = new Date(prevTo.getTime() - spanMs);
+    return { from, to, prevFrom, prevTo };
+  }
   const months = period === "1M" ? 1 : period === "3M" ? 3 : period === "6M" ? 6 : 12;
   const from = new Date(now); from.setMonth(from.getMonth() - months);
   const prevTo = new Date(from);
@@ -54,6 +73,8 @@ function getPeriodRange(period: Period): {
 export default function Metricas() {
   const [period, setPeriod] = useState<Period>("3M");
   const [compare, setCompare] = useState(true);
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
 
   const [txns, setTxns] = useState<TransactionDTO[]>([]);
   const [prevTxns, setPrevTxns] = useState<TransactionDTO[]>([]);
@@ -62,9 +83,15 @@ export default function Metricas() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const range = useMemo(() => getPeriodRange(period), [period]);
+  const range = useMemo(() => getPeriodRange(period, customFrom, customTo), [period, customFrom, customTo]);
+  const customMissing = period === "CUSTOM" && (!range.from || !range.to);
 
   useEffect(() => {
+    if (customMissing) {
+      setLoading(false);
+      setTxns([]); setPrevTxns([]); setSummary(null); setSummaryPrev(null);
+      return;
+    }
     setLoading(true);
     const filters = {
       fromDate: range.from ? toISO(range.from) : undefined,
@@ -93,7 +120,7 @@ export default function Metricas() {
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [period, compare, range.from?.getTime(), range.to?.getTime()]);
+  }, [period, compare, customMissing, range.from?.getTime(), range.to?.getTime()]);
 
   const metrics = useMemo(() => computeMetrics(txns), [txns]);
   const metricsPrev = useMemo(() => computeMetrics(prevTxns), [prevTxns]);
@@ -139,12 +166,12 @@ export default function Metricas() {
               <GitCompareArrows className="h-3.5 w-3.5" />
               Comparar vs período previo
             </button>
-            <div className="flex items-center gap-0.5 bg-secondary rounded-lg p-0.5 border border-white/[0.04]">
+            <div className="flex items-center gap-0.5 bg-secondary rounded-lg p-0.5 border border-white/[0.04] overflow-x-auto no-scrollbar">
               {PERIODS.map((p) => (
                 <button
                   key={p.value}
                   onClick={() => setPeriod(p.value)}
-                  className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                  className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all whitespace-nowrap flex-shrink-0 ${
                     period === p.value
                       ? "bg-cyan-500 text-white shadow-sm shadow-cyan-500/30"
                       : "text-gray-400 hover:text-white"
@@ -156,6 +183,56 @@ export default function Metricas() {
             </div>
           </div>
         </motion.div>
+
+        {period === "CUSTOM" && (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-secondary rounded-xl border border-white/[0.04] p-3 flex flex-col sm:flex-row sm:items-center gap-3 flex-wrap"
+          >
+            <span className="text-[11px] text-gray-500 uppercase tracking-widest font-semibold">Rango de fechas</span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <label className="flex items-center gap-2 text-xs text-gray-400">
+                Desde
+                <input
+                  type="date"
+                  value={customFrom}
+                  onChange={(e) => setCustomFrom(e.target.value)}
+                  className="bg-black/20 text-white px-2 py-1.5 rounded-lg border border-white/[0.06] focus:outline-none focus:border-cyan-500/40 text-xs"
+                />
+              </label>
+              <label className="flex items-center gap-2 text-xs text-gray-400">
+                Hasta
+                <input
+                  type="date"
+                  value={customTo}
+                  onChange={(e) => setCustomTo(e.target.value)}
+                  className="bg-black/20 text-white px-2 py-1.5 rounded-lg border border-white/[0.06] focus:outline-none focus:border-cyan-500/40 text-xs"
+                />
+              </label>
+              {(customFrom || customTo) && (
+                <button
+                  onClick={() => { setCustomFrom(""); setCustomTo(""); }}
+                  className="text-[11px] text-gray-500 hover:text-white underline underline-offset-2"
+                >
+                  Limpiar
+                </button>
+              )}
+            </div>
+          </motion.div>
+        )}
+
+        {compare && range.prevFrom && range.prevTo && summaryPrev && (
+          <p className="text-[11px] text-gray-500 -mt-2">
+            Comparando vs {range.prevFrom.toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" })} – {range.prevTo.toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" })}
+          </p>
+        )}
+
+        {customMissing && (
+          <div className="p-3 bg-cyan-500/10 border border-cyan-500/30 rounded-xl text-cyan-200 text-sm">
+            Seleccioná un rango de fechas para ver las métricas.
+          </div>
+        )}
 
         {error && (
           <div className="p-3 bg-red-900/30 border border-red-700/50 rounded-xl text-red-300 text-sm">{error}</div>
