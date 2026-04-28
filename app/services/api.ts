@@ -466,6 +466,22 @@ export const transactions = {
     }
     return (await res.json()) as TransactionImportResult;
   },
+  importExtract: async (file: File, accountId: string, dryRun: boolean) => {
+    const token = getToken();
+    const form = new FormData();
+    form.append("file", file);
+    const qs = new URLSearchParams({ accountId, dryRun: String(dryRun) });
+    const res = await fetch(`${BASE_URL}/transactions/import-extract?${qs.toString()}`, {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      body: form,
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error((body as { message?: string }).message ?? `HTTP ${res.status}`);
+    }
+    return (await res.json()) as TransactionImportResult;
+  },
 };
 
 export type ChatRole = "USER" | "ASSISTANT" | "SYSTEM";

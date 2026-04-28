@@ -348,7 +348,7 @@ export default function Transacciones() {
         )}
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <StatCard delay={0.05} icon={<Scale className="h-5 w-5 text-white" />} gradient="from-cyan-400 to-blue-600" label="Movimientos" value={String(summary?.totalCount ?? 0)} subtext={`${summary?.incomeCount ?? 0} in · ${summary?.expenseCount ?? 0} out`} />
+          <StatCard delay={0.05} icon={<Scale className="h-5 w-5 text-white" />} gradient="from-cyan-400 to-blue-600" label="Movimientos" value={String(summary?.totalCount ?? 0)} subtext={`${summary?.incomeCount ?? 0} ingresos · ${summary?.expenseCount ?? 0} gastos`} />
           <StatCard delay={0.10} icon={<TrendingUp className="h-5 w-5 text-white" />} gradient="from-emerald-400 to-teal-600" label="Ingresos" value={formatCOPShort(summary?.totalIncome ?? "0")} subtext={`${summary?.incomeCount ?? 0} transacciones`} />
           <StatCard delay={0.15} icon={<TrendingDown className="h-5 w-5 text-white" />} gradient="from-rose-400 to-red-600" label="Gastos" value={formatCOPShort(summary?.totalExpense ?? "0")} subtext={`${summary?.expenseCount ?? 0} transacciones`} />
           <StatCard delay={0.20} icon={<Wallet className="h-5 w-5 text-white" />} gradient={parseFloat(summary?.netBalance ?? "0") >= 0 ? "from-violet-400 to-purple-600" : "from-rose-400 to-red-600"} label="Balance" value={formatCOPShort(summary?.netBalance ?? "0")} subtext="ingresos − gastos" />
@@ -612,6 +612,7 @@ export default function Transacciones() {
 
       <ImportModal
         open={importOpen}
+        accounts={accountList}
         onClose={() => setImportOpen(false)}
         onImported={refreshAfterImport}
       />
@@ -719,27 +720,35 @@ function Dropdown<T extends string>({
   );
 }
 
+type ImportMode = "file" | "extract";
+
 function ImportModal({
-  open, onClose, onImported,
-}: { open: boolean; onClose: () => void; onImported: () => void | Promise<void> }) {
+  open, accounts, onClose, onImported,
+}: { open: boolean; accounts: AccountDTO[]; onClose: () => void; onImported: () => void | Promise<void> }) {
+  const [mode, setMode] = useState<ImportMode>("file");
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<TransactionImportResult | null>(null);
   const [step, setStep] = useState<"select" | "preview" | "done">("select");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [autoCreateAccounts, setAutoCreateAccounts] = useState(false);
+  const [extractAccountId, setExtractAccountId] = useState<string>("");
 
   useEffect(() => {
     if (!open) {
+      setMode("file");
       setFile(null); setPreview(null); setStep("select"); setError(null); setBusy(false);
       setAutoCreateAccounts(false);
+      setExtractAccountId("");
     }
   }, [open]);
 
-  async function runPreview(f: File, autoCreate: boolean) {
+  async function runPreview(f: File) {
     setBusy(true); setError(null);
     try {
-      const res = await transactions.importFile(f, true, autoCreate);
+      const res = mode === "file"
+        ? await transactions.importFile(f, true, autoCreateAccounts)
+        : await transactions.importExtract(f, extractAccountId, true);
       setPreview(res);
       setStep("preview");
     } catch (e: any) {
@@ -753,7 +762,9 @@ function ImportModal({
     if (!file) return;
     setBusy(true); setError(null);
     try {
-      const res = await transactions.importFile(file, false, autoCreateAccounts);
+      const res = mode === "file"
+        ? await transactions.importFile(file, false, autoCreateAccounts)
+        : await transactions.importExtract(file, extractAccountId, false);
       setPreview(res);
       setStep("done");
       await onImported();
@@ -797,67 +808,109 @@ function ImportModal({
 
             {step === "select" && (
               <div>
-                <p className="text-sm text-gray-300 mb-3">
-                  Sube un archivo <strong>.xlsx</strong> o <strong>.csv</strong> con estas columnas (los nombres deben coincidir):
-                </p>
-                <div className="bg-secondary border border-white/[0.04] rounded-xl p-3 text-xs text-gray-300 mb-4 overflow-x-auto">
-                  <code className="whitespace-nowrap">Fecha · Tipo · Monto · Cuenta · Cuenta destino · Categoría · Descripción</code>
+                <div className="flex items-center gap-1 bg-black/20 rounded-xl p-1 border border-white/[0.04] mb-4">
+                  <button
+                    onClick={() => setMode("file")}
+                    className={`flex-1 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
+                      mode === "file" ? "bg-cyan-500/20 text-cyan-200 ring-1 ring-cyan-500/30" : "text-gray-400 hover:text-white"
+                    }`}
+                  >
+                    Archivo (CSV / Excel)
+                  </button>
+                  <button
+                    onClick={() => setMode("extract")}
+                    className={`flex-1 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
+                      mode === "extract" ? "bg-cyan-500/20 text-cyan-200 ring-1 ring-cyan-500/30" : "text-gray-400 hover:text-white"
+                    }`}
+                  >
+                    Extracto bancario (IA)
+                  </button>
                 </div>
-                <ul className="text-xs text-gray-500 space-y-1 mb-4 list-disc pl-4">
-                  <li><strong>Tipo</strong>: INGRESO, GASTO o TRANSFERENCIA (también acepta INCOME/EXPENSE/TRANSFER).</li>
-                  <li><strong>Cuenta</strong>: por defecto debe existir, pero podés activar la opción de abajo para crearla automáticamente.</li>
-                  <li><strong>Categoría</strong>: si no existe, se crea automáticamente con el tipo correspondiente.</li>
-                  <li><strong>Cuenta destino</strong> sólo aplica para TRANSFERENCIA.</li>
-                  <li>Tip: exportá primero un Excel para ver el formato exacto.</li>
-                </ul>
 
-                <label className="flex items-start gap-2.5 mb-4 p-3 bg-secondary border border-white/[0.04] rounded-xl cursor-pointer hover:border-white/[0.08] transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={autoCreateAccounts}
-                    onChange={(e) => setAutoCreateAccounts(e.target.checked)}
-                    className="mt-0.5 accent-cyan-500"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-white font-medium">Crear cuentas que no existan</p>
-                    <p className="text-[11px] text-gray-500 mt-0.5">
-                      Si está activo, las cuentas nuevas se crean con saldo 0, moneda COP y banco igual al nombre.
-                      Después podés ajustarlas en /cuentas.
+                {mode === "file" && (
+                  <div>
+                    <p className="text-sm text-gray-300 mb-3">
+                      Sube un archivo <strong>.xlsx</strong> o <strong>.csv</strong> con estas columnas (los nombres deben coincidir):
                     </p>
-                  </div>
-                </label>
+                    <div className="bg-secondary border border-white/[0.04] rounded-xl p-3 text-xs text-gray-300 mb-4 overflow-x-auto">
+                      <code className="whitespace-nowrap">Fecha · Tipo · Monto · Cuenta · Cuenta destino · Categoría · Descripción</code>
+                    </div>
+                    <ul className="text-xs text-gray-500 space-y-1 mb-4 list-disc pl-4">
+                      <li><strong>Tipo</strong>: INGRESO, GASTO o TRANSFERENCIA (también acepta INCOME/EXPENSE/TRANSFER).</li>
+                      <li><strong>Cuenta</strong>: por defecto debe existir, pero podés activar la opción de abajo para crearla automáticamente.</li>
+                      <li><strong>Categoría</strong>: si no existe, se crea automáticamente con el tipo correspondiente.</li>
+                      <li><strong>Cuenta destino</strong> sólo aplica para TRANSFERENCIA.</li>
+                      <li>Tip: exportá primero un Excel para ver el formato exacto.</li>
+                    </ul>
 
-                <label className="block">
-                  <div className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
-                    file ? "border-cyan-500/40 bg-cyan-500/5" : "border-white/[0.08] hover:border-white/[0.18]"
-                  }`}>
-                    <Upload className="h-8 w-8 text-gray-500 mx-auto mb-2" />
-                    {file ? (
-                      <>
-                        <p className="text-sm text-white font-medium">{file.name}</p>
-                        <p className="text-xs text-gray-500 mt-0.5">{(file.size / 1024).toFixed(1)} KB</p>
-                      </>
-                    ) : (
-                      <>
-                        <p className="text-sm text-gray-300">Click o arrastra un archivo aquí</p>
-                        <p className="text-xs text-gray-500 mt-0.5">.xlsx o .csv</p>
-                      </>
-                    )}
+                    <label className="flex items-start gap-2.5 mb-4 p-3 bg-secondary border border-white/[0.04] rounded-xl cursor-pointer hover:border-white/[0.08] transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={autoCreateAccounts}
+                        onChange={(e) => setAutoCreateAccounts(e.target.checked)}
+                        className="mt-0.5 accent-cyan-500"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-white font-medium">Crear cuentas que no existan</p>
+                        <p className="text-[11px] text-gray-500 mt-0.5">
+                          Si está activo, las cuentas nuevas se crean con saldo 0, moneda COP y banco igual al nombre.
+                          Después podés ajustarlas en /cuentas.
+                        </p>
+                      </div>
+                    </label>
+
+                    <FileDrop
+                      file={file}
+                      accept=".xlsx,.xls,.csv,.txt"
+                      hint=".xlsx o .csv"
+                      onPick={(f) => { setFile(f); runPreview(f); }}
+                    />
                   </div>
-                  <input
-                    type="file"
-                    accept=".xlsx,.xls,.csv,.txt"
-                    className="hidden"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) { setFile(f); runPreview(f, autoCreateAccounts); }
-                    }}
-                  />
-                </label>
+                )}
+
+                {mode === "extract" && (
+                  <div>
+                    <p className="text-sm text-gray-300 mb-3">
+                      Subí un <strong>extracto bancario</strong> (PDF, CSV o TXT). FinBot lee el contenido y extrae las transacciones.
+                      Después revisás el preview y confirmás.
+                    </p>
+                    <ul className="text-xs text-gray-500 space-y-1 mb-4 list-disc pl-4">
+                      <li>La <strong>cuenta es obligatoria</strong> — todas las transacciones se asignan a ella.</li>
+                      <li>La IA sugiere categorías; las que no existan se crean automáticamente.</li>
+                      <li>El PDF debe tener texto seleccionable. Si es escaneado, usá CSV.</li>
+                      <li>Revisá bien el preview — la IA puede equivocarse en montos, fechas o tipos.</li>
+                    </ul>
+
+                    <div className="mb-4">
+                      <label className="text-xs text-gray-400 uppercase tracking-widest font-semibold mb-1.5 block">
+                        Cuenta del extracto *
+                      </label>
+                      <select
+                        value={extractAccountId}
+                        onChange={(e) => setExtractAccountId(e.target.value)}
+                        className="w-full bg-secondary text-white px-3 py-2.5 rounded-xl border border-white/[0.06] focus:outline-none focus:border-cyan-500/40 text-sm"
+                      >
+                        <option value="">Seleccioná una cuenta</option>
+                        {accounts.map((a) => (
+                          <option key={a.id} value={a.id}>{a.name} {a.bank ? `· ${a.bank}` : ""}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <FileDrop
+                      file={file}
+                      disabled={!extractAccountId}
+                      disabledHint="Primero seleccioná la cuenta"
+                      accept=".pdf,.csv,.txt"
+                      hint=".pdf, .csv o .txt"
+                      onPick={(f) => { setFile(f); runPreview(f); }}
+                    />
+                  </div>
+                )}
 
                 {busy && (
                   <div className="flex items-center justify-center gap-2 mt-4 text-sm text-gray-400">
-                    <Loader2 className="h-4 w-4 animate-spin" /> Analizando archivo…
+                    <Loader2 className="h-4 w-4 animate-spin" /> {mode === "extract" ? "FinBot está leyendo el extracto…" : "Analizando archivo…"}
                   </div>
                 )}
               </div>
@@ -980,5 +1033,51 @@ function ImportPreview({ result }: { result: TransactionImportResult }) {
         </div>
       </div>
     </div>
+  );
+}
+
+function FileDrop({
+  file, accept, hint, onPick, disabled = false, disabledHint,
+}: {
+  file: File | null;
+  accept: string;
+  hint: string;
+  onPick: (f: File) => void;
+  disabled?: boolean;
+  disabledHint?: string;
+}) {
+  return (
+    <label className={`block ${disabled ? "cursor-not-allowed" : "cursor-pointer"}`}>
+      <div className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
+        disabled ? "border-white/[0.06] bg-black/20"
+          : file ? "border-cyan-500/40 bg-cyan-500/5"
+          : "border-white/[0.08] hover:border-white/[0.18]"
+      }`}>
+        <Upload className={`h-8 w-8 mx-auto mb-2 ${disabled ? "text-gray-700" : "text-gray-500"}`} />
+        {disabled ? (
+          <p className="text-sm text-gray-500">{disabledHint ?? "No disponible"}</p>
+        ) : file ? (
+          <>
+            <p className="text-sm text-white font-medium">{file.name}</p>
+            <p className="text-xs text-gray-500 mt-0.5">{(file.size / 1024).toFixed(1)} KB</p>
+          </>
+        ) : (
+          <>
+            <p className="text-sm text-gray-300">Click o arrastra un archivo aquí</p>
+            <p className="text-xs text-gray-500 mt-0.5">{hint}</p>
+          </>
+        )}
+      </div>
+      <input
+        type="file"
+        accept={accept}
+        disabled={disabled}
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) onPick(f);
+        }}
+      />
+    </label>
   );
 }
