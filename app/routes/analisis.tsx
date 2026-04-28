@@ -30,8 +30,6 @@ import {
   type RegressionResult,
 } from "~/lib/finance-math";
 
-// ─── Period config ───────────────────────────────────────────────────────────
-
 type Period = "1M" | "3M" | "6M" | "12M";
 
 const PERIODS: { value: Period; label: string; days: number }[] = [
@@ -49,8 +47,6 @@ function toISO(d: Date): string {
 function shortDate(d: Date): string {
   return d.toLocaleDateString("es-CO", { day: "numeric", month: "short" });
 }
-
-// ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function Analisis() {
   const [period, setPeriod] = useState<Period>("3M");
@@ -78,13 +74,11 @@ export default function Analisis() {
       .finally(() => setLoading(false));
   }, [period]);
 
-  // Balance actual = suma de balances de todas las cuentas
   const currentBalance = useMemo(
     () => accountList.reduce((s, a) => s + parseFloat(a.balance || "0"), 0),
     [accountList],
   );
 
-  // ─── Derivaciones matemáticas ─────────────────────────────────────────────
   const analysis = useMemo(() => compute(txns, range.from, range.to), [txns, range.from, range.to]);
 
   const burnRate = analysis.avgDailyExpense - analysis.avgDailyIncome; // neto (positivo = quemas)
@@ -130,7 +124,6 @@ export default function Analisis() {
   return (
     <DashboardLayout>
       <div className="space-y-5">
-        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -177,7 +170,6 @@ export default function Analisis() {
           </div>
         ) : (
           <>
-            {/* KPI row */}
             <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
               <MetricsKpiCard
                 delay={0.05}
@@ -223,10 +215,8 @@ export default function Analisis() {
               />
             </div>
 
-            {/* Model summary banner */}
             <ModelSummary analysis={analysis} currentBalance={currentBalance} burnRate={burnRate} runway={runway} />
 
-            {/* Chart 1: velocidad de gasto con suavizado + derivada */}
             <ChartCard
               icon={<Activity className="h-4 w-4 text-cyan-400" />}
               title="Velocidad y aceleración del gasto"
@@ -274,7 +264,6 @@ export default function Analisis() {
               ]} />
             </ChartCard>
 
-            {/* Chart 2: regresión de balance acumulado con proyección */}
             <ChartCard
               icon={<TrendingUp className="h-4 w-4 text-emerald-400" />}
               title="Regresión del balance acumulado"
@@ -311,7 +300,6 @@ export default function Analisis() {
               ]} />
             </ChartCard>
 
-            {/* Two-col: category growth + elasticity */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <CategoryGrowthTable growth={analysis.categoryGrowth} />
               <ElasticityTable elasticity={analysis.categoryElasticity} />
@@ -322,8 +310,6 @@ export default function Analisis() {
     </DashboardLayout>
   );
 }
-
-// ─── Sub-components ──────────────────────────────────────────────────────────
 
 function ChartCard({
   icon, title, subtitle, children,
@@ -530,8 +516,6 @@ function CumulativeTooltip({ active, payload, label }: any) {
   );
 }
 
-// ─── Cálculo principal ──────────────────────────────────────────────────────
-
 interface CategoryGrowth {
   name: string;
   slope: number;      // $ / mes
@@ -673,8 +657,6 @@ function computeCategoryElasticity(txns: TransactionDTO[]): CategoryElasticity[]
   results.sort((a, b) => Math.abs(b.elasticity) - Math.abs(a.elasticity));
   return results.slice(0, 8);
 }
-
-// ─── Formatters ─────────────────────────────────────────────────────────────
 
 function formatAccel(v: number): string {
   if (Math.abs(v) < 1) return "≈ 0";

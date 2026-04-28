@@ -41,7 +41,6 @@ export default function Login() {
         transition={{ duration: 0.45 }}
         className="w-full max-w-md"
       >
-        {/* Logo */}
         <div className="flex items-center justify-center gap-3 mb-8">
           <div className="w-10 h-10 bg-warning rounded-lg flex items-center justify-center shadow-lg shadow-warning/30">
             <Zap className="text-white h-6 w-6" />
@@ -49,7 +48,6 @@ export default function Login() {
           <span className="text-white font-bold text-3xl tracking-tight">FINZ</span>
         </div>
 
-        {/* Card */}
         <div className="bg-secondary rounded-2xl p-8">
           <h1 className="text-white text-2xl font-semibold mb-1">Bienvenido</h1>
           <p className="text-gray-400 text-sm mb-8">
@@ -57,7 +55,6 @@ export default function Login() {
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Email */}
             <div>
               <label className="block text-sm text-gray-400 mb-1.5">
                 Correo electrónico
@@ -75,7 +72,6 @@ export default function Login() {
               </div>
             </div>
 
-            {/* Password */}
             <div>
               <div className="flex items-baseline justify-between mb-1.5">
                 <label className="block text-sm text-gray-400">
@@ -108,7 +104,6 @@ export default function Login() {
               </div>
             </div>
 
-            {/* Error */}
             {error && (
               <motion.p
                 initial={{ opacity: 0, y: -4 }}
@@ -119,7 +114,6 @@ export default function Login() {
               </motion.p>
             )}
 
-            {/* Submit */}
             <button
               type="submit"
               disabled={loading}

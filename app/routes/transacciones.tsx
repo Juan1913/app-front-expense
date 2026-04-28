@@ -17,8 +17,6 @@ import {
   type TransactionFilters, type TransactionSummary,
 } from "~/services/api";
 
-// ─── Types and constants ─────────────────────────────────────────────────────
-
 type TypeFilter = "ALL" | "INCOME" | "EXPENSE" | "TRANSFER";
 type DatePreset = "ALL" | "TODAY" | "7D" | "30D" | "MONTH" | "3M" | "YEAR" | "CUSTOM";
 
@@ -49,8 +47,6 @@ const emptyForm: CreateTransactionDTO = {
   accountId: "",
   categoryId: "",
 };
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function dateRangeForPreset(p: DatePreset): { from?: Date; to?: Date } {
   const now = new Date();
@@ -85,8 +81,6 @@ function dateGroupLabel(date: Date): string {
   });
 }
 
-// ─── Page ────────────────────────────────────────────────────────────────────
-
 export default function Transacciones() {
   const [searchParams] = useSearchParams();
   const initialQuery = searchParams.get("q") ?? "";
@@ -99,7 +93,6 @@ export default function Transacciones() {
   const [accountList, setAccountList] = useState<AccountDTO[]>([]);
   const [categoryList, setCategoryList] = useState<CategoryDTO[]>([]);
 
-  // Filters
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("ALL");
   const [datePreset, setDatePreset] = useState<DatePreset>("ALL");
   const [customFrom, setCustomFrom] = useState("");
@@ -133,12 +126,10 @@ export default function Transacciones() {
     setSearchDebounced(urlQuery);
   }, [urlQuery]);
 
-  // Debounce
   useEffect(() => { const t = setTimeout(() => setSearchDebounced(search), 300); return () => clearTimeout(t); }, [search]);
   useEffect(() => { const t = setTimeout(() => setMinDebounced(minAmount), 400); return () => clearTimeout(t); }, [minAmount]);
   useEffect(() => { const t = setTimeout(() => setMaxDebounced(maxAmount), 400); return () => clearTimeout(t); }, [maxAmount]);
 
-  // Reset to page 0 on any filter change
   useEffect(() => { setPage(0); }, [
     typeFilter, datePreset, customFrom, customTo, accountFilter, categoryFilter,
     minDebounced, maxDebounced, searchDebounced, sortBy, sortDir, pageSize,
@@ -163,7 +154,6 @@ export default function Transacciones() {
     return r;
   }, [typeFilter, datePreset, customFrom, customTo, accountFilter, categoryFilter, searchDebounced, minDebounced, maxDebounced]);
 
-  // Fetch list + summary
   useEffect(() => {
     setLoading(true);
     Promise.all([
@@ -186,7 +176,6 @@ export default function Transacciones() {
       .catch(() => {});
   }, []);
 
-  // Group by day
   const groups = useMemo(() => {
     const map = new Map<string, TransactionDTO[]>();
     for (const tx of list) {
@@ -287,7 +276,6 @@ export default function Transacciones() {
   return (
     <DashboardLayout>
       <div className="space-y-5">
-        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
           className="flex items-start justify-between gap-4 flex-wrap"
@@ -311,7 +299,6 @@ export default function Transacciones() {
           <div className="p-3 bg-red-900/30 border border-red-700/50 rounded-xl text-red-300 text-sm">{error}</div>
         )}
 
-        {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <StatCard delay={0.05} icon={<Scale className="h-5 w-5 text-white" />} gradient="from-cyan-400 to-blue-600" label="Movimientos" value={String(summary?.totalCount ?? 0)} subtext={`${summary?.incomeCount ?? 0} in · ${summary?.expenseCount ?? 0} out`} />
           <StatCard delay={0.10} icon={<TrendingUp className="h-5 w-5 text-white" />} gradient="from-emerald-400 to-teal-600" label="Ingresos" value={formatCOPShort(summary?.totalIncome ?? "0")} subtext={`${summary?.incomeCount ?? 0} transacciones`} />
@@ -319,7 +306,6 @@ export default function Transacciones() {
           <StatCard delay={0.20} icon={<Wallet className="h-5 w-5 text-white" />} gradient={parseFloat(summary?.netBalance ?? "0") >= 0 ? "from-violet-400 to-purple-600" : "from-rose-400 to-red-600"} label="Balance" value={formatCOPShort(summary?.netBalance ?? "0")} subtext="ingresos − gastos" />
         </div>
 
-        {/* Filter toolbar */}
         <motion.div
           initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
           className="bg-secondary rounded-xl border border-white/[0.04] p-2.5 flex flex-col sm:flex-row sm:items-center sm:flex-wrap gap-3"
@@ -340,7 +326,6 @@ export default function Transacciones() {
             )}
           </div>
 
-          {/* Type pills — scroll horizontal en móvil */}
           <div className="flex items-center gap-0.5 bg-black/20 rounded-lg p-0.5 border border-white/[0.04] w-full sm:w-auto overflow-x-auto no-scrollbar">
             {(["ALL", "INCOME", "EXPENSE", "TRANSFER"] as const).map((t) => (
               <button
@@ -365,7 +350,6 @@ export default function Transacciones() {
 
           <div className="hidden sm:block flex-1" />
 
-          {/* Right side controls — wrap natural en móvil */}
           <div className="flex items-center gap-2 flex-wrap">
             <Dropdown
               icon={<Calendar className="h-3.5 w-3.5 text-gray-500" />}
@@ -401,7 +385,6 @@ export default function Transacciones() {
           </div>
         </motion.div>
 
-        {/* Advanced filters */}
         <AnimatePresence>
           {showAdvanced && (
             <motion.div
@@ -451,7 +434,6 @@ export default function Transacciones() {
           )}
         </AnimatePresence>
 
-        {/* Active chips */}
         {activeChips.length > 0 && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2 flex-wrap">
             <span className="text-[11px] text-gray-500 uppercase tracking-widest font-semibold">Filtros activos:</span>
@@ -473,7 +455,6 @@ export default function Transacciones() {
           </motion.div>
         )}
 
-        {/* List */}
         {loading ? (
           <div className="flex justify-center pt-16">
             <Loader2 className="h-6 w-6 text-gray-500 animate-spin" />
@@ -520,7 +501,6 @@ export default function Transacciones() {
           </motion.div>
         )}
 
-        {/* Pagination */}
         {totalPages > 1 && !loading && (
           <div className="flex items-center justify-between gap-3 flex-wrap pt-2">
             <span className="text-xs text-gray-500">
@@ -598,8 +578,6 @@ export default function Transacciones() {
     </DashboardLayout>
   );
 }
-
-// ─── Local small helpers (used only by this page) ────────────────────────────
 
 function StatCard({ delay, icon, gradient, label, value, subtext }: {
   delay: number; icon: React.ReactNode; gradient: string; label: string; value: string; subtext?: string;

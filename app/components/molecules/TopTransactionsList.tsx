@@ -20,7 +20,6 @@ interface Props {
 }
 
 export function TopTransactionsList({ transactions, limit = 5 }: Props) {
-  // Only expenses, sorted by amount desc
   const top = transactions
     .filter((t) => t.type === "EXPENSE")
     .sort((a, b) => parseFloat(b.amount) - parseFloat(a.amount))

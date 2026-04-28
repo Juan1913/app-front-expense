@@ -23,8 +23,6 @@ import {
   type ScenarioParams,
 } from "~/lib/finance-math";
 
-// ─── Period config ──────────────────────────────────────────────────────────
-
 type Period = "1M" | "3M" | "6M";
 
 const PERIODS: { value: Period; label: string; days: number }[] = [
@@ -43,8 +41,6 @@ function toISO(d: Date): string {
 function shortDate(d: Date): string {
   return d.toLocaleDateString("es-CO", { day: "numeric", month: "short" });
 }
-
-// ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function Simulador() {
   const [period, setPeriod] = useState<Period>("3M");
@@ -89,7 +85,6 @@ export default function Simulador() {
     [accountList],
   );
 
-  // Series y modelos
   const baseline = useMemo(() => buildDailySeries(txns, range.from, range.to), [txns, range.from, range.to]);
   const scenarioSeries = useMemo(
     () => applyScenario(txns, scenario, range.from, range.to),
@@ -99,7 +94,6 @@ export default function Simulador() {
   const baselineModel = useModel(baseline);
   const scenarioModel = useModel(scenarioSeries);
 
-  // Datos del gráfico: real + proyección baseline + proyección escenario
   const chartData = useMemo(() => {
     if (baseline.length === 0) return [] as ChartRow[];
     const lastDate = baseline[baseline.length - 1].date;
@@ -135,7 +129,6 @@ export default function Simulador() {
     return rows;
   }, [baseline, scenarioSeries, baselineModel, scenarioModel]);
 
-  // ── Categorías candidatas para recortar (top por gasto, sólo EXPENSE) ─────
   const topExpenseCats = useMemo(() => {
     const totals = new Map<string, number>();
     for (const t of txns) {
@@ -156,7 +149,6 @@ export default function Simulador() {
   const visibleCats = showAllCats ? topExpenseCats : topExpenseCats.slice(0, 6);
   const hiddenCount = Math.max(0, topExpenseCats.length - 6);
 
-  // ─── Wishlist projections ────────────────────────────────────────────────
   const wishlistProjection = useMemo(() => {
     const baseDaily = baselineModel.dailyNet;
     const scenDaily = scenarioModel.dailyNet;
@@ -176,7 +168,6 @@ export default function Simulador() {
       .sort((a, b) => (a.scenDays ?? Infinity) - (b.scenDays ?? Infinity));
   }, [wishlistItems, baselineModel, scenarioModel]);
 
-  // ─── Métricas comparativas ───────────────────────────────────────────────
   const baseRunway = computeRunway(currentBalance, baselineModel.dailyNet);
   const scenRunway = computeRunway(currentBalance, scenarioModel.dailyNet);
   const baseSavingsPct = computeSavingsPct(baselineModel.totalIncome, baselineModel.totalExpense);
@@ -192,7 +183,6 @@ export default function Simulador() {
   return (
     <DashboardLayout>
       <div className="space-y-5">
-        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
           className="flex items-start justify-between gap-4 flex-wrap"
@@ -248,7 +238,6 @@ export default function Simulador() {
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {/* ── Sliders panel ─────────────────────────────────────────── */}
             <div className="lg:col-span-1 space-y-4">
               <div className="bg-secondary rounded-2xl p-5 border border-white/[0.04] space-y-4">
                 <div className="flex items-center gap-2">
@@ -320,9 +309,7 @@ export default function Simulador() {
               </div>
             </div>
 
-            {/* ── Resultados ────────────────────────────────────────────── */}
             <div className="lg:col-span-2 space-y-4">
-              {/* Impact banner */}
               <motion.div
                 initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.3 }}
@@ -356,7 +343,6 @@ export default function Simulador() {
                 </div>
               </motion.div>
 
-              {/* Comparison KPIs */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <ComparisonCard
                   icon={<Calendar className="h-4 w-4 text-white" />}
@@ -385,7 +371,6 @@ export default function Simulador() {
                 />
               </div>
 
-              {/* Comparison chart */}
               <motion.div
                 initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.35 }}
@@ -429,7 +414,6 @@ export default function Simulador() {
                 </div>
               </motion.div>
 
-              {/* Wishlist projection */}
               {wishlistProjection.length > 0 && (
                 <motion.div
                   initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
@@ -459,8 +443,6 @@ export default function Simulador() {
     </DashboardLayout>
   );
 }
-
-// ─── Sub-components ──────────────────────────────────────────────────────────
 
 interface SliderFieldProps {
   label: string;
@@ -626,8 +608,6 @@ function ScenarioTooltip({ active, payload, label }: any) {
     </div>
   );
 }
-
-// ─── Hooks & helpers ─────────────────────────────────────────────────────────
 
 interface SeriesModel {
   reg: ReturnType<typeof linearRegression>;

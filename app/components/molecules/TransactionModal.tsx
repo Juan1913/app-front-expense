@@ -75,7 +75,6 @@ export function TransactionModal({
             </div>
 
             <div className="space-y-4">
-              {/* Type toggle — 3 buttons: Gasto, Ingreso, Transferir/Ahorrar */}
               <div className="grid grid-cols-3 gap-2">
                 <TypeButton
                   active={form.type === "EXPENSE"}

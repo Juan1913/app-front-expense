@@ -46,7 +46,6 @@ export function IncomeExpenseBarChart({ data }: Props) {
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.5 }}
     >
-      {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div>
           <h3 className="text-white text-sm font-semibold">Ingresos vs Gastos</h3>
@@ -62,7 +61,6 @@ export function IncomeExpenseBarChart({ data }: Props) {
         )}
       </div>
 
-      {/* Chart */}
       <div className="h-52">
         {chartData.length === 0 ? (
           <div className="h-full flex items-center justify-center">
@@ -97,7 +95,6 @@ export function IncomeExpenseBarChart({ data }: Props) {
         )}
       </div>
 
-      {/* Legend */}
       <div className="flex items-center gap-4 mt-3 pt-3 border-t border-white/[0.05]">
         <div className="flex items-center gap-1.5">
           <div className="w-2.5 h-2.5 rounded-full bg-cyan-400" />

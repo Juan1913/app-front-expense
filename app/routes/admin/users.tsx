@@ -19,14 +19,12 @@ export default function AdminUsers() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
-  // Invite modal
   const [showInvite, setShowInvite] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviting, setInviting] = useState(false);
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [inviteSuccess, setInviteSuccess] = useState(false);
 
-  // Action loading
   const [actionId, setActionId] = useState<string | null>(null);
 
   const fetchUsers = useCallback(async (p: number) => {
@@ -37,7 +35,6 @@ export default function AdminUsers() {
       setTotalPages(data.totalPages);
       setTotalElements(data.totalElements);
     } catch {
-      // keep previous state
     } finally {
       setLoading(false);
     }
@@ -95,7 +92,6 @@ export default function AdminUsers() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-white text-2xl font-bold">Usuarios</h1>
@@ -110,7 +106,6 @@ export default function AdminUsers() {
           </button>
         </div>
 
-        {/* Search */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
           <input
@@ -122,7 +117,6 @@ export default function AdminUsers() {
           />
         </div>
 
-        {/* Table */}
         <div className="bg-secondary rounded-2xl overflow-hidden">
           {loading ? (
             <div className="flex items-center justify-center py-16">
@@ -146,7 +140,6 @@ export default function AdminUsers() {
               <tbody>
                 {filtered.map((user) => (
                   <tr key={user.id} className="border-b border-gray-800 hover:bg-gray-800/30 transition-colors">
-                    {/* User info */}
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center flex-shrink-0">
@@ -163,7 +156,6 @@ export default function AdminUsers() {
                       </div>
                     </td>
 
-                    {/* Role */}
                     <td className="px-5 py-4">
                       <span
                         className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full ${
@@ -177,7 +169,6 @@ export default function AdminUsers() {
                       </span>
                     </td>
 
-                    {/* Status */}
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-2">
                         <span
@@ -200,7 +191,6 @@ export default function AdminUsers() {
                       </div>
                     </td>
 
-                    {/* Date */}
                     <td className="px-5 py-4 text-gray-400 text-xs">
                       {new Date(user.createdAt).toLocaleDateString("es-CO", {
                         year: "numeric",
@@ -209,7 +199,6 @@ export default function AdminUsers() {
                       })}
                     </td>
 
-                    {/* Actions */}
                     <td className="px-5 py-4">
                       <div className="flex items-center justify-end gap-2">
                         <button
@@ -243,7 +232,6 @@ export default function AdminUsers() {
           )}
         </div>
 
-        {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between">
             <p className="text-gray-400 text-sm">
@@ -269,7 +257,6 @@ export default function AdminUsers() {
         )}
       </div>
 
-      {/* Invite Modal */}
       <AnimatePresence>
         {showInvite && (
           <motion.div

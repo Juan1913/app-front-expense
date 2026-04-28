@@ -43,7 +43,6 @@ export function SpendingDonutChart({ data }: Props) {
         <div className="py-10 text-center text-gray-500 text-xs">Sin gastos registrados</div>
       ) : (
         <>
-          {/* Donut */}
           <div className="relative flex justify-center items-center">
             <ResponsiveContainer width="100%" height={168}>
               <PieChart>
@@ -78,7 +77,6 @@ export function SpendingDonutChart({ data }: Props) {
               </PieChart>
             </ResponsiveContainer>
 
-            {/* Center label */}
             {top && (
               <div className="absolute text-center pointer-events-none select-none">
                 <div className="text-2xl font-bold" style={{ color: top.color }}>
@@ -91,7 +89,6 @@ export function SpendingDonutChart({ data }: Props) {
             )}
           </div>
 
-          {/* Legend */}
           <div className="space-y-2 border-t border-white/[0.05] pt-3 mt-1">
             {chartData.slice(0, 5).map((d) => (
               <div key={d.name} className="flex items-center gap-2">

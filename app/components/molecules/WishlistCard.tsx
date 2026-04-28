@@ -52,14 +52,12 @@ export function WishlistCard({ wish, delay, onOpen, onEdit, onDelete }: Props) {
       onClick={onOpen}
       className={`bg-secondary rounded-2xl p-5 border border-white/[0.04] group cursor-pointer hover:border-white/[0.1] transition-colors relative overflow-hidden ${isCancelled ? "opacity-60" : ""}`}
     >
-      {/* Accent gradient bg */}
       <div
         className="absolute inset-0 opacity-[0.06] pointer-events-none"
         style={{ background: `linear-gradient(135deg, ${color} 0%, transparent 60%)` }}
       />
 
       <div className="relative">
-        {/* Top row: icon + status */}
         <div className="flex items-start justify-between mb-4">
           <div
             className="w-12 h-12 rounded-xl flex items-center justify-center text-lg font-bold select-none flex-shrink-0"
@@ -98,13 +96,11 @@ export function WishlistCard({ wish, delay, onOpen, onEdit, onDelete }: Props) {
           </div>
         </div>
 
-        {/* Name + description */}
         <h3 className="text-white font-bold text-base truncate mb-0.5">{wish.name}</h3>
         <p className="text-xs text-gray-500 truncate mb-4 min-h-[16px]">
           {wish.description || <span className="italic text-gray-600">Sin descripción</span>}
         </p>
 
-        {/* Amounts */}
         <div className="flex items-end justify-between mb-2">
           <div>
             <div className="text-[10px] text-gray-500 uppercase tracking-wider">Ahorrado</div>
@@ -118,7 +114,6 @@ export function WishlistCard({ wish, delay, onOpen, onEdit, onDelete }: Props) {
           </div>
         </div>
 
-        {/* Progress bar */}
         <div className="w-full bg-gray-700/40 rounded-full h-2 overflow-hidden">
           <motion.div
             className="h-2 rounded-full"
@@ -129,7 +124,6 @@ export function WishlistCard({ wish, delay, onOpen, onEdit, onDelete }: Props) {
           />
         </div>
 
-        {/* Footer */}
         <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/[0.05]">
           <div className="flex items-center gap-2">
             {dStyle ? (

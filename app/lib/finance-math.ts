@@ -48,8 +48,6 @@ export function correlation(xs: number[], ys: number[]): number {
   return den === 0 ? 0 : num / den;
 }
 
-// ─── Suavizado ───────────────────────────────────────────────────────────────
-
 /** Media móvil centrada de tamaño window (odd). Mantiene la longitud. */
 export function movingAverage(xs: number[], window: number): number[] {
   const w = Math.max(1, window | 0);
@@ -150,8 +148,6 @@ export function quadraticRegression(xs: number[], ys: number[]): QuadraticResult
   const r2 = ssTot === 0 ? 1 : 1 - ssRes / ssTot;
   return { a, b, c, r2, n };
 }
-
-// ─── Series diarias a partir de transacciones ────────────────────────────────
 
 export interface TxLike {
   amount: string;

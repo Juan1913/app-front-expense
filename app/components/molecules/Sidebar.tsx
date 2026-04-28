@@ -51,7 +51,6 @@ export function Sidebar({ collapsed, onToggle, mobileOpen = false, onMobileClose
   const leaveTimer = useRef<number | null>(null);
   const effectiveCollapsed = collapsed && !isHovered;
 
-  // Detección de overflow vertical en el nav del sidebar (escritorio)
   const navRef = useRef<HTMLElement | null>(null);
   const [scrollState, setScrollState] = useState({ overflow: false, atBottom: false });
 
@@ -94,7 +93,6 @@ export function Sidebar({ collapsed, onToggle, mobileOpen = false, onMobileClose
     leaveTimer.current = window.setTimeout(() => setIsHovered(false), 120);
   }
 
-  // Bloquea el scroll del body mientras el drawer móvil está abierto
   useEffect(() => {
     if (typeof document === "undefined") return;
     if (mobileOpen) {
@@ -111,7 +109,6 @@ export function Sidebar({ collapsed, onToggle, mobileOpen = false, onMobileClose
 
   return (
     <>
-      {/* ── Sidebar escritorio (md+) ── */}
       <div
         onMouseEnter={handleEnter}
         onMouseLeave={handleLeave}
@@ -160,7 +157,6 @@ export function Sidebar({ collapsed, onToggle, mobileOpen = false, onMobileClose
             </div>
           )}
 
-          {/* Indicador de "hay más abajo" — sticky en el fondo del nav */}
           {scrollState.overflow && !scrollState.atBottom && (
             <div
               className={`sticky bottom-0 flex justify-center pointer-events-none bg-gradient-to-t from-secondary via-secondary/95 to-transparent pt-6 pb-1 ${
@@ -179,7 +175,6 @@ export function Sidebar({ collapsed, onToggle, mobileOpen = false, onMobileClose
           )}
         </nav>
 
-        {/* Footer: Mi cuenta + toggle */}
         <div className={`border-t border-white/[0.06] ${effectiveCollapsed ? "px-2 py-2" : "p-3"} space-y-1 flex-shrink-0`}>
           <NavItem
             icon={Settings}
@@ -203,9 +198,7 @@ export function Sidebar({ collapsed, onToggle, mobileOpen = false, onMobileClose
         </div>
       </div>
 
-      {/* ── Drawer móvil (oculto en md+) ── */}
       <div className={`md:hidden fixed inset-0 z-50 ${mobileOpen ? "" : "pointer-events-none"}`}>
-        {/* Backdrop */}
         <div
           onClick={onMobileClose}
           className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${
@@ -213,7 +206,6 @@ export function Sidebar({ collapsed, onToggle, mobileOpen = false, onMobileClose
           }`}
         />
 
-        {/* Panel */}
         <div
           className={`absolute top-0 left-0 h-full w-[280px] max-w-[85%] bg-secondary flex flex-col shadow-2xl transition-transform duration-300 ease-out ${
             mobileOpen ? "translate-x-0" : "-translate-x-full"

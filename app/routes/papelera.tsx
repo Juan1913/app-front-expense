@@ -68,7 +68,6 @@ export default function Papelera() {
   return (
     <DashboardLayout>
       <div className="space-y-5">
-        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -105,7 +104,6 @@ export default function Papelera() {
           </div>
         ) : (
           <>
-            {/* Accounts section */}
             {trashAccounts.length > 0 && (
               <TrashSection
                 title="Cuentas"
@@ -136,7 +134,6 @@ export default function Papelera() {
               </TrashSection>
             )}
 
-            {/* Categories section */}
             {trashCategories.length > 0 && (
               <TrashSection
                 title="Categorías"
@@ -166,7 +163,6 @@ export default function Papelera() {
               </TrashSection>
             )}
 
-            {/* Warning */}
             <div className="flex items-start gap-3 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl">
               <AlertTriangle className="h-4 w-4 text-amber-400 flex-shrink-0 mt-0.5" />
               <p className="text-xs text-amber-200/90 leading-relaxed">
@@ -182,8 +178,6 @@ export default function Papelera() {
     </DashboardLayout>
   );
 }
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
 
 function TrashSection({
   title, icon, count, children,

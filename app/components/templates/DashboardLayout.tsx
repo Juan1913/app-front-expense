@@ -61,13 +61,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const mobileSearchInputRef = useRef<HTMLInputElement>(null);
   const isAdmin = user?.role === "ADMIN";
 
-  // Cierra el drawer móvil al cambiar de ruta
   useEffect(() => {
     setMobileMenuOpen(false);
     setMobileSearchOpen(false);
   }, [location.pathname]);
 
-  // Auto-focus al abrir buscador móvil
   useEffect(() => {
     if (mobileSearchOpen) {
       mobileSearchInputRef.current?.focus();
@@ -161,14 +159,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     }
   }
 
-  // Load saved sidebar state on mount (defaults to collapsed)
   useEffect(() => {
     if (typeof window === "undefined") return;
     const saved = localStorage.getItem(SIDEBAR_STATE_KEY);
     if (saved === "false") setSidebarCollapsed(false);
   }, []);
 
-  // Persist state
   function toggleSidebar() {
     setSidebarCollapsed((prev) => {
       const next = !prev;
@@ -211,7 +207,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-4">
-          {/* Botón lupa solo en móvil */}
           <button
             type="button"
             onClick={() => setMobileSearchOpen((v) => !v)}
@@ -314,7 +309,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
       </header>
 
-      {/* Buscador móvil desplegable */}
       {mobileSearchOpen && (
         <div className="md:hidden bg-secondary rounded-2xl p-3 mb-3 flex items-center gap-2">
           <div className="relative flex-1">

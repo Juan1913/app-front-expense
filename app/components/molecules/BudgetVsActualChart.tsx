@@ -32,7 +32,6 @@ export function BudgetVsActualChart({ data }: Props) {
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.5, delay: 0.1 }}
     >
-      {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div>
           <h3 className="text-white text-sm font-semibold">Presupuesto vs Real</h3>
@@ -62,7 +61,6 @@ export function BudgetVsActualChart({ data }: Props) {
         </div>
       ) : (
         <>
-          {/* Totals row */}
           <div className="flex items-center gap-4 mb-4 pb-3 border-b border-white/[0.05]">
             <div>
               <div className="text-[10px] text-gray-500 uppercase tracking-widest">Real</div>
@@ -81,7 +79,6 @@ export function BudgetVsActualChart({ data }: Props) {
             )}
           </div>
 
-          {/* Category bars */}
           <div className="space-y-3">
             {top.map((b, i) => {
               const pct = parseFloat(b.percentage);

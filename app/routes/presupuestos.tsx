@@ -34,7 +34,6 @@ const SORT_OPTIONS: { value: SortBy; label: string }[] = [
   { value: "category",   label: "Categoría" },
 ];
 
-// Category color from name hash
 function categoryColor(name: string): string {
   const COLORS = ["#22d3ee","#a78bfa","#fb7185","#fbbf24","#34d399","#60a5fa","#f97316","#e879f9"];
   let h = 0;
@@ -75,40 +74,33 @@ export default function Presupuestos() {
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [year, setYear]   = useState(now.getFullYear());
 
-  // Data
   const [list, setList] = useState<BudgetComparisonItem[]>([]);
   const [cats, setCats] = useState<CategoryDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Filters
   const [search, setSearch] = useState("");
   const [searchDebounced, setSearchDebounced] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
   const [categoryFilter, setCategoryFilter] = useState<string>("ALL");
   const [sortBy, setSortBy] = useState<SortBy>("percentage");
 
-  // Modal
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<BudgetComparisonItem | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [saving, setSaving] = useState(false);
 
-  // Details drawer
   const [detailTarget, setDetailTarget] = useState<BudgetComparisonItem | null>(null);
 
-  // Debounce search
   useEffect(() => {
     const t = setTimeout(() => setSearchDebounced(search), 200);
     return () => clearTimeout(t);
   }, [search]);
 
-  // Load expense categories
   useEffect(() => {
     categories.list("EXPENSE").then(setCats).catch(() => {});
   }, []);
 
-  // Load comparison data when period changes
   useEffect(() => {
     setLoading(true);
     budgets.comparison({ month, year })
@@ -130,7 +122,6 @@ export default function Presupuestos() {
     setYear(now.getFullYear());
   }
 
-  // ── Derived: filtered + sorted list ──
   const filtered = useMemo(() => {
     let result = list;
     if (searchDebounced.trim()) {
@@ -169,7 +160,6 @@ export default function Presupuestos() {
   );
   const availableCats = cats.filter((c) => !usedCategoryIds.has(c.id));
 
-  // ── Handlers ──
   function openCreate() {
     setEditing(null);
     setForm(emptyForm);
@@ -194,7 +184,6 @@ export default function Presupuestos() {
           month, year,
         });
       }
-      // Refetch to recompute actual/pct
       const refreshed = await budgets.comparison({ month, year });
       setList(refreshed);
       setShowModal(false);
@@ -221,7 +210,6 @@ export default function Presupuestos() {
   return (
     <DashboardLayout>
       <div className="space-y-5">
-        {/* ── Header ── */}
         <motion.div
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -250,7 +238,6 @@ export default function Presupuestos() {
           </div>
         )}
 
-        {/* ── Period selector ── */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -291,7 +278,6 @@ export default function Presupuestos() {
           </button>
         </motion.div>
 
-        {/* ── Stats row ── */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <StatCard
             delay={0.05}
@@ -329,13 +315,11 @@ export default function Presupuestos() {
           />
         </div>
 
-        {/* ── Filter toolbar ── */}
         <motion.div
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           className="bg-secondary rounded-xl border border-white/[0.04] p-2.5 flex flex-col sm:flex-row sm:items-center sm:flex-wrap gap-3"
         >
-          {/* Search */}
           <div className="relative w-full sm:w-[260px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
             <input
@@ -357,7 +341,6 @@ export default function Presupuestos() {
 
           <div className="hidden sm:block flex-1" />
 
-          {/* Status pills — scroll horizontal en móvil */}
           <div className="flex items-center gap-0.5 bg-black/20 rounded-lg p-0.5 border border-white/[0.04] w-full sm:w-auto overflow-x-auto no-scrollbar">
             {STATUS_OPTIONS.map((o) => (
               <button
@@ -375,13 +358,11 @@ export default function Presupuestos() {
             ))}
           </div>
 
-          {/* Sort dropdown */}
           <div className="self-end sm:self-auto">
             <SortDropdown value={sortBy} onChange={setSortBy} />
           </div>
         </motion.div>
 
-        {/* ── Grid ── */}
         {loading ? (
           <div className="flex justify-center pt-16">
             <Loader2 className="h-6 w-6 text-gray-500 animate-spin" />
@@ -422,7 +403,6 @@ export default function Presupuestos() {
         )}
       </div>
 
-      {/* ── Modal ── */}
       <CreateEditModal
         open={showModal}
         editing={editing}
@@ -438,7 +418,6 @@ export default function Presupuestos() {
         onSave={handleSave}
       />
 
-      {/* ── Details drawer ── */}
       <BudgetDetailsDrawer
         budget={detailTarget}
         onClose={() => setDetailTarget(null)}
@@ -448,8 +427,6 @@ export default function Presupuestos() {
     </DashboardLayout>
   );
 }
-
-// ─── Sub-components ──────────────────────────────────────────────────────────
 
 function StatCard({
   delay, icon, gradient, label, value, subtext,
@@ -557,14 +534,12 @@ function BudgetCard({
       onClick={onOpen}
       className="bg-secondary rounded-2xl p-5 border border-white/[0.04] group cursor-pointer hover:border-white/[0.1] transition-colors relative overflow-hidden"
     >
-      {/* Accent gradient bg based on status */}
       <div
         className="absolute inset-0 opacity-[0.04] pointer-events-none"
         style={{ background: `linear-gradient(135deg, ${color} 0%, transparent 60%)` }}
       />
 
       <div className="relative">
-        {/* Top row: icon + menu actions */}
         <div className="flex items-start justify-between mb-4">
           <div
             className="w-11 h-11 rounded-xl flex items-center justify-center text-lg font-bold select-none flex-shrink-0"
@@ -595,7 +570,6 @@ function BudgetCard({
           </div>
         </div>
 
-        {/* Name + status badge */}
         <div className="flex items-center gap-2 flex-wrap mb-3">
           <h3 className="text-white font-bold text-base truncate flex-1 min-w-0">{budget.categoryName}</h3>
           <span className={`flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border ${style.badge}`}>
@@ -604,7 +578,6 @@ function BudgetCard({
           </span>
         </div>
 
-        {/* Amounts */}
         <div className="flex items-end justify-between mb-2">
           <div>
             <div className="text-[10px] text-gray-500 uppercase tracking-wider">Gastado</div>
@@ -616,7 +589,6 @@ function BudgetCard({
           </div>
         </div>
 
-        {/* Progress */}
         <div className="w-full bg-gray-700/40 rounded-full h-2 overflow-hidden">
           <motion.div
             className={`h-2 rounded-full ${style.bar}`}
@@ -626,7 +598,6 @@ function BudgetCard({
           />
         </div>
 
-        {/* Footer: remaining + CTA */}
         <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/[0.05]">
           <span className="text-xs text-gray-500">
             {remaining >= 0
@@ -642,8 +613,6 @@ function BudgetCard({
     </motion.div>
   );
 }
-
-// ─── Create/Edit Modal ───────────────────────────────────────────────────────
 
 function CreateEditModal({
   open, editing, form, saving, month, year, availableCats,
@@ -750,8 +719,6 @@ function CreateEditModal({
   );
 }
 
-// ─── Details drawer ──────────────────────────────────────────────────────────
-
 function BudgetDetailsDrawer({
   budget, onClose, onEdit, onDelete,
 }: {
@@ -810,7 +777,6 @@ function BudgetDetailsDrawer({
             onClick={(e) => e.stopPropagation()}
             className="w-full max-w-md bg-[#0f0f12] border-l border-white/[0.06] h-full overflow-y-auto"
           >
-            {/* Sticky header */}
             <div className="sticky top-0 z-10 bg-[#0f0f12]/95 backdrop-blur-sm border-b border-white/[0.04] px-5 py-4 flex items-center justify-between">
               <h2 className="text-white font-semibold">Detalle del presupuesto</h2>
               <button
@@ -822,7 +788,6 @@ function BudgetDetailsDrawer({
             </div>
 
             <div className="p-5 space-y-5">
-              {/* Hero */}
               <div
                 className="relative rounded-2xl p-6 overflow-hidden"
                 style={{
@@ -846,7 +811,6 @@ function BudgetDetailsDrawer({
                   {MONTHS_ES[budget.month - 1]} {budget.year}
                 </p>
 
-                {/* Big progress */}
                 <div className="mt-5">
                   <div className="flex items-end justify-between mb-1.5">
                     <div>
@@ -877,7 +841,6 @@ function BudgetDetailsDrawer({
                 </div>
               </div>
 
-              {/* Actions */}
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={onEdit}
@@ -893,7 +856,6 @@ function BudgetDetailsDrawer({
                 </button>
               </div>
 
-              {/* Transactions */}
               <div className="bg-secondary rounded-xl border border-white/[0.04] overflow-hidden">
                 <div className="px-4 py-3 border-b border-white/[0.04] flex items-center justify-between">
                   <h4 className="text-sm font-semibold text-white">Transacciones del período</h4>

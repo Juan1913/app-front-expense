@@ -17,7 +17,6 @@ interface Props {
 }
 
 export function SpendingHeatmap({ transactions }: Props) {
-  // Aggregate expenses by day
   const daily: Record<string, number> = {};
   for (const tx of transactions) {
     if (tx.type !== "EXPENSE") continue;
@@ -75,7 +74,6 @@ export function SpendingHeatmap({ transactions }: Props) {
         <h3 className="text-sm font-semibold text-white">Actividad Diaria</h3>
       </div>
 
-      {/* Summary line */}
       <div className="flex items-baseline justify-between mb-3">
         <div>
           <div className="text-base font-bold text-white">{formatCOPShort(total)}</div>
@@ -87,7 +85,6 @@ export function SpendingHeatmap({ transactions }: Props) {
         </div>
       </div>
 
-      {/* Weekday labels */}
       <div className="grid grid-cols-7 gap-[3px] mb-1">
         {WEEKDAYS.map((d, i) => (
           <div key={i} className="text-[9px] text-gray-600 text-center font-semibold">
@@ -96,7 +93,6 @@ export function SpendingHeatmap({ transactions }: Props) {
         ))}
       </div>
 
-      {/* Grid */}
       <div className="space-y-[3px]">
         {weeks.map((week, wi) => (
           <div key={wi} className="grid grid-cols-7 gap-[3px]">
@@ -121,7 +117,6 @@ export function SpendingHeatmap({ transactions }: Props) {
         ))}
       </div>
 
-      {/* Legend */}
       <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/[0.05]">
         <span className="text-[10px] text-gray-500">Menos</span>
         <div className="flex items-center gap-[3px]">

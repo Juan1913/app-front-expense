@@ -50,7 +50,6 @@ export function AccountBanner({ accounts, username = "Usuario", onAccountChange 
       <div className="absolute inset-0 bg-gradient-to-b from-white/5 via-transparent to-transparent" />
 
       <div className="relative z-10 h-full flex flex-col gap-6 items-center sm:flex-row sm:justify-between sm:items-center sm:gap-4">
-        {/* Tarjeta */}
         <div className="relative flex-shrink-0 sm:ml-4 mt-3 sm:mt-0">
           <div className="absolute w-56 h-36 sm:w-72 sm:h-44 bg-white/10 backdrop-blur-sm rounded-2xl shadow-lg transform -rotate-3 sm:-rotate-6 translate-x-2 translate-y-2 border border-white/20" />
           <div
@@ -79,7 +78,6 @@ export function AccountBanner({ accounts, username = "Usuario", onAccountChange 
           </div>
         </div>
 
-        {/* Info */}
         <div className="text-white text-center sm:text-right w-full sm:w-auto sm:flex-1 flex flex-col justify-center items-center sm:items-end sm:ml-8 min-w-0">
           <button
             onClick={() => navigate("/cuentas")}

@@ -14,8 +14,6 @@ import {
   type DebtDTO, type CreateDebtDTO, type StrategyComparisonDTO, type PayoffPlanDTO,
 } from "~/services/api";
 
-// ─── Form state ──────────────────────────────────────────────────────────────
-
 interface DebtFormState {
   name: string;
   description: string;
@@ -33,8 +31,6 @@ const emptyForm: DebtFormState = {
   annualRate: "", minimumPayment: "", startDate: "",
 };
 
-// ─── Page ────────────────────────────────────────────────────────────────────
-
 export default function Deudas() {
   const [list, setList] = useState<DebtDTO[]>([]);
   const [comparison, setComparison] = useState<StrategyComparisonDTO | null>(null);
@@ -50,7 +46,6 @@ export default function Deudas() {
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<DebtDTO | null>(null);
 
-  // ── Load debts ───────────────────────────────────────────────────────────
   function reload() {
     setLoading(true);
     debts.list()
@@ -60,13 +55,11 @@ export default function Deudas() {
   }
   useEffect(reload, []);
 
-  // ── Debounce extra budget slider ─────────────────────────────────────────
   useEffect(() => {
     const t = setTimeout(() => setExtraDebounced(extraBudget), 250);
     return () => clearTimeout(t);
   }, [extraBudget]);
 
-  // ── Run strategy comparison whenever debounced extra changes / list changes
   useEffect(() => {
     const active = list.filter((d) => d.status === "ACTIVE" && parseFloat(d.currentBalance) > 0);
     if (active.length === 0) { setComparison(null); return; }
@@ -75,10 +68,8 @@ export default function Deudas() {
       .catch((e) => setError(e.message));
   }, [extraDebounced, list]);
 
-  // ── KPIs derivados de la lista ──────────────────────────────────────────
   const stats = useMemo(() => computeStats(list), [list]);
 
-  // ── CRUD handlers ────────────────────────────────────────────────────────
   function openCreate() {
     setEditing(null);
     setForm(emptyForm);
@@ -134,7 +125,6 @@ export default function Deudas() {
   return (
     <DashboardLayout>
       <div className="space-y-5">
-        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
           className="flex items-start justify-between gap-4 flex-wrap"
@@ -183,7 +173,6 @@ export default function Deudas() {
           </div>
         ) : (
           <>
-            {/* KPI cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               <KpiCard
                 icon={<Wallet className="h-5 w-5 text-white" />}
@@ -215,7 +204,6 @@ export default function Deudas() {
               />
             </div>
 
-            {/* Strategy comparator */}
             {comparison && (
               <StrategyComparator
                 comparison={comparison}
@@ -225,7 +213,6 @@ export default function Deudas() {
               />
             )}
 
-            {/* Debt list */}
             <div className="space-y-2.5">
               <h2 className="text-[11px] text-gray-500 uppercase tracking-widest font-semibold">
                 Tus deudas
@@ -260,8 +247,6 @@ export default function Deudas() {
     </DashboardLayout>
   );
 }
-
-// ─── KPI / Cards ─────────────────────────────────────────────────────────────
 
 function KpiCard({ icon, gradient, label, value, subtext }: {
   icon: React.ReactNode; gradient: string; label: string; value: string; subtext: string;
@@ -355,8 +340,6 @@ function Field({ label, value, valueClass }: { label: string; value: string; val
   );
 }
 
-// ─── Strategy comparator ─────────────────────────────────────────────────────
-
 function StrategyComparator({
   comparison, extraBudget, onChangeExtra, totalMinimum,
 }: {
@@ -365,7 +348,6 @@ function StrategyComparator({
   onChangeExtra: (v: number) => void;
   totalMinimum: number;
 }) {
-  // Construye datos para el chart de trayectorias
   const chartData = useMemo(() => {
     const min = comparison.minimumOnly.trajectory;
     const snw = comparison.snowball.trajectory;
@@ -403,7 +385,6 @@ function StrategyComparator({
         </div>
       </div>
 
-      {/* Slider extra budget */}
       <div>
         <div className="flex items-baseline justify-between gap-2 mb-1.5">
           <span className="text-xs text-gray-300">Extra mensual sobre los mínimos</span>
@@ -428,7 +409,6 @@ function StrategyComparator({
         </div>
       </div>
 
-      {/* Recommendation banner */}
       {extraBudget > 0 && interestSaved > 0 && (
         <div className="bg-gradient-to-br from-emerald-500/10 to-cyan-500/5 border border-emerald-500/30 rounded-xl p-4">
           <div className="flex items-center gap-2 text-emerald-300 text-xs font-semibold mb-1">
@@ -442,7 +422,6 @@ function StrategyComparator({
         </div>
       )}
 
-      {/* 3 strategy cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <StrategyCard
           plan={comparison.minimumOnly}
@@ -467,7 +446,6 @@ function StrategyComparator({
         />
       </div>
 
-      {/* Trajectory chart */}
       <div>
         <h4 className="text-[11px] text-gray-500 uppercase tracking-widest font-semibold mb-2">
           Trayectoria del saldo total
@@ -501,7 +479,6 @@ function StrategyComparator({
         </div>
       </div>
 
-      {/* Payoff order */}
       {comparison[recommended === "SNOWBALL" ? "snowball" : recommended === "AVALANCHE" ? "avalanche" : "minimumOnly"]
         .order.length > 1 && (
         <div>
@@ -596,8 +573,6 @@ function TrajectoryTooltip({ active, payload, label }: any) {
     </div>
   );
 }
-
-// ─── Modals ──────────────────────────────────────────────────────────────────
 
 function DebtFormModal({
   open, editing, form, saving, onClose, onChange, onSave,
@@ -730,8 +705,6 @@ function Input({
     </div>
   );
 }
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 interface DebtStats {
   totalBalance: number;

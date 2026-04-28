@@ -41,7 +41,6 @@ export function WeekendVsWeekday({
         </div>
       ) : (
         <>
-          {/* Weekday row */}
           <DayRow
             icon={<Sun className="h-4 w-4" />}
             label="Entre semana"
@@ -54,7 +53,6 @@ export function WeekendVsWeekday({
 
           <div className="h-3" />
 
-          {/* Weekend row */}
           <DayRow
             icon={<Coffee className="h-4 w-4" />}
             label="Fin de semana"
@@ -65,7 +63,6 @@ export function WeekendVsWeekday({
             highlighted={heavierOnWeekend && weekendAvg > 0}
           />
 
-          {/* Verdict */}
           {diff != null && Math.abs(diff) >= 5 && (
             <p className="text-xs text-gray-400 text-center mt-5 pt-4 border-t border-white/[0.05]">
               Gastas{" "}

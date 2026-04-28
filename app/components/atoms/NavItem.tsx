@@ -25,7 +25,6 @@ export function NavItem({ icon: Icon, label, isActive, collapsed = false, onClic
       <Icon className={cn("flex-shrink-0", collapsed ? "h-[18px] w-[18px]" : "h-[17px] w-[17px]")} />
       {!collapsed && <span className="truncate">{label}</span>}
 
-      {/* Tooltip on hover when collapsed */}
       {collapsed && (
         <span className="absolute left-full ml-3 px-2.5 py-1 bg-gray-900 text-white text-xs rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150 shadow-lg border border-white/[0.06] z-50">
           {label}

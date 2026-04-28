@@ -23,8 +23,6 @@ import {
   type TransactionDTO, type TransactionSummary,
 } from "~/services/api";
 
-// ─── Period config ───────────────────────────────────────────────────────────
-
 type Period = "1M" | "3M" | "6M" | "12M" | "ALL";
 
 const PERIODS: { value: Period; label: string }[] = [
@@ -52,8 +50,6 @@ function getPeriodRange(period: Period): {
   const prevFrom = new Date(prevTo); prevFrom.setMonth(prevFrom.getMonth() - months);
   return { from, to: now, prevFrom, prevTo };
 }
-
-// ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function Metricas() {
   const [period, setPeriod] = useState<Period>("3M");
@@ -99,11 +95,9 @@ export default function Metricas() {
       .finally(() => setLoading(false));
   }, [period, compare, range.from?.getTime(), range.to?.getTime()]);
 
-  // ── Metrics derived from transactions ────────────────────────────────────
   const metrics = useMemo(() => computeMetrics(txns), [txns]);
   const metricsPrev = useMemo(() => computeMetrics(prevTxns), [prevTxns]);
 
-  // Cash flow merged: current by month, with prev categories map for delta
   const catItems: CategoryRankItem[] = metrics.categoryTotals.map((c) => ({
     name: c.name,
     total: c.total,
@@ -112,7 +106,6 @@ export default function Metricas() {
       : null,
   }));
 
-  // KPI deltas
   const incomeChange   = summaryPrev ? percentChange(parseFloat(summary?.totalIncome ?? "0"),   parseFloat(summaryPrev.totalIncome))    : null;
   const expenseChange  = summaryPrev ? percentChange(parseFloat(summary?.totalExpense ?? "0"),  parseFloat(summaryPrev.totalExpense))   : null;
   const netChange      = summaryPrev ? percentChange(parseFloat(summary?.netBalance ?? "0"),    parseFloat(summaryPrev.netBalance))     : null;
@@ -123,7 +116,6 @@ export default function Metricas() {
   return (
     <DashboardLayout>
       <div className="space-y-5">
-        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -175,7 +167,6 @@ export default function Metricas() {
           </div>
         ) : (
           <>
-            {/* KPI cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               <MetricsKpiCard
                 delay={0.05}
@@ -216,24 +207,20 @@ export default function Metricas() {
               />
             </div>
 
-            {/* Flagship — balance acumulado a lo largo del período */}
             <CumulativeTrendChart data={metrics.cumulative} />
 
-            {/* Row 1: distribución del gasto */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <CategoryRankingChart items={catItems} limit={6} />
               <WeekdayHistogram data={metrics.weekdaySpend} />
               <AccountBreakdownChart items={metrics.accountBreakdown} />
             </div>
 
-            {/* Row 2: patrones temporales y anomalías */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <TopTransactionsList transactions={txns} limit={5} />
               <DayOfMonthChart data={metrics.dayOfMonth} />
               <SavingsRateTrend data={metrics.savingsRate} />
             </div>
 
-            {/* Row 3: contexto financiero y comparaciones */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <AccountBreakdownChart
                 items={metrics.incomeSources}
@@ -254,7 +241,6 @@ export default function Metricas() {
               />
             </div>
 
-            {/* Row 4: gastos recurrentes (full width, list format) */}
             <RecurringExpensesList items={metrics.recurring} limit={5} />
           </>
         )}
@@ -262,8 +248,6 @@ export default function Metricas() {
     </DashboardLayout>
   );
 }
-
-// ─── Helpers ────────────────────────────────────────────────────────────────
 
 function percentChange(current: number, prev: number): number | null {
   if (prev === 0) return current === 0 ? 0 : null;

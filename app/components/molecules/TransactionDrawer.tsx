@@ -42,7 +42,6 @@ export function TransactionDrawer({ tx, onClose, onEdit, onDelete }: Props) {
             </div>
 
             <div className="p-5 space-y-5">
-              {/* Hero */}
               <div
                 className="rounded-2xl p-6 text-center"
                 style={{
@@ -77,7 +76,6 @@ export function TransactionDrawer({ tx, onClose, onEdit, onDelete }: Props) {
                 </p>
               </div>
 
-              {/* Info rows */}
               <div className="bg-secondary rounded-xl border border-white/[0.04] divide-y divide-white/[0.04]">
                 {tx.type === "TRANSFER" ? (
                   <>
@@ -101,7 +99,6 @@ export function TransactionDrawer({ tx, onClose, onEdit, onDelete }: Props) {
                 />
               </div>
 
-              {/* Actions */}
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={onEdit}

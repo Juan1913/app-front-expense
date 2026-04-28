@@ -75,7 +75,6 @@ export function WishlistDrawer({
             onClick={(e) => e.stopPropagation()}
             className="w-full max-w-md bg-[#0f0f12] border-l border-white/[0.06] h-full overflow-y-auto"
           >
-            {/* Sticky header */}
             <div className="sticky top-0 z-10 bg-[#0f0f12]/95 backdrop-blur-sm border-b border-white/[0.04] px-5 py-4 flex items-center justify-between">
               <h2 className="text-white font-semibold">Detalle del deseo</h2>
               <button
@@ -103,7 +102,6 @@ export function WishlistDrawer({
   );
 }
 
-// Separated body for readability
 function DrawerBody({
   wish, addAmount, setAddAmount, busy, onAdd, onAction, onEdit, onDelete,
 }: {
@@ -123,7 +121,6 @@ function DrawerBody({
 
   return (
     <div className="p-5 space-y-5">
-      {/* Hero */}
       <div
         className="relative rounded-2xl p-6 overflow-hidden"
         style={{
@@ -148,7 +145,6 @@ function DrawerBody({
           </div>
         </div>
 
-        {/* Amounts — both same size, balanced */}
         <div className="flex items-baseline justify-between mb-3">
           <div>
             <div className="text-[10px] text-gray-500 uppercase tracking-widest mb-0.5">Ahorrado</div>
@@ -160,7 +156,6 @@ function DrawerBody({
           </div>
         </div>
 
-        {/* Progress bar */}
         <div className="w-full bg-gray-700/40 rounded-full h-2.5 overflow-hidden">
           <motion.div
             className="h-2.5 rounded-full"
@@ -180,7 +175,6 @@ function DrawerBody({
         </div>
       </div>
 
-      {/* Add savings (only when ACTIVE) */}
       {isActive && (
         <div className="bg-secondary rounded-xl border border-white/[0.04] p-4 space-y-3">
           <div className="flex items-center gap-2">
@@ -209,7 +203,6 @@ function DrawerBody({
         </div>
       )}
 
-      {/* Info rows */}
       <div className="bg-secondary rounded-xl border border-white/[0.04] divide-y divide-white/[0.04]">
         <InfoRow label="Estado" value={
           wish.status === "ACTIVE"    ? "Activo"
@@ -227,7 +220,6 @@ function DrawerBody({
         />
       </div>
 
-      {/* Status actions */}
       <div className="grid grid-cols-2 gap-2">
         {isActive && (
           <>
@@ -261,7 +253,6 @@ function DrawerBody({
         )}
       </div>
 
-      {/* Edit / Delete */}
       <div className="grid grid-cols-2 gap-2">
         <button
           onClick={onEdit}

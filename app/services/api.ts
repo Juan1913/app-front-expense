@@ -1,5 +1,3 @@
-// ─── Types ───────────────────────────────────────────────────────────────────
-
 export interface LoginResponse {
   token: string;
   userId: string;
@@ -103,8 +101,7 @@ export interface PageResult<T> {
   size: number;
 }
 
-// ─── Auth helpers (delegan al store — solo por compatibilidad legacy) ──────────
-
+// Auth helpers delegan al store — solo por compatibilidad legacy.
 export const getToken = (): string | null => {
   if (typeof window === "undefined") return null;
   try {
@@ -120,8 +117,6 @@ export const getToken = (): string | null => {
 // Estos shims siguen exportados para verify.tsx y login.tsx hasta migrar
 export const saveSession = (_data: LoginResponse) => {};
 export const clearSession = () => {};
-
-// ─── Core fetch wrapper ───────────────────────────────────────────────────────
 
 const BASE_URL = (import.meta.env.VITE_API_URL ?? "") + "/api/v1";
 
@@ -163,8 +158,6 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
   return res.json();
 }
 
-// ─── Auth ─────────────────────────────────────────────────────────────────────
-
 export const auth = {
   login: (email: string, password: string) =>
     apiFetch<LoginResponse>("/auth/login", {
@@ -204,8 +197,6 @@ export const auth = {
     }),
 };
 
-// ─── Dashboard ────────────────────────────────────────────────────────────────
-
 export const dashboard = {
   getSummary: (params?: { accountId?: string; months?: number }) => {
     const qs = new URLSearchParams();
@@ -215,8 +206,6 @@ export const dashboard = {
     return apiFetch<DashboardSummary>(`/dashboard/summary${q ? `?${q}` : ""}`);
   },
 };
-
-// ─── Accounts ─────────────────────────────────────────────────────────────────
 
 export interface AccountImpact {
   transactions: number;
@@ -268,14 +257,11 @@ export const accounts = {
     apiFetch<AccountDTO>(`/accounts/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   remove: (id: string) => apiFetch<void>(`/accounts/${id}`, { method: "DELETE" }),
 
-  // ── Soft-delete & trash ──
   impact:          (id: string) => apiFetch<AccountImpact>(`/accounts/${id}/impact`),
   trash:           ()            => apiFetch<AccountDTO[]>("/accounts/trash"),
   restore:         (id: string) => apiFetch<AccountDTO>(`/accounts/${id}/restore`, { method: "POST" }),
   removePermanent: (id: string) => apiFetch<void>(`/accounts/${id}/permanent`, { method: "DELETE" }),
 };
-
-// ─── Categories ───────────────────────────────────────────────────────────────
 
 export interface CategoryDTO {
   id: string;
@@ -289,8 +275,6 @@ export interface CategoryImpact {
   transactions: number;
   budgets: number;
 }
-
-// ─── Budgets ──────────────────────────────────────────────────────────────────
 
 export interface BudgetDTO {
   id: string;
@@ -352,14 +336,11 @@ export const categories = {
     apiFetch<CategoryDTO>(`/categories/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   remove: (id: string) => apiFetch<void>(`/categories/${id}`, { method: "DELETE" }),
 
-  // ── Soft-delete & trash ──
   impact:          (id: string) => apiFetch<CategoryImpact>(`/categories/${id}/impact`),
   trash:           ()            => apiFetch<CategoryDTO[]>("/categories/trash"),
   restore:         (id: string) => apiFetch<CategoryDTO>(`/categories/${id}/restore`, { method: "POST" }),
   removePermanent: (id: string) => apiFetch<void>(`/categories/${id}/permanent`, { method: "DELETE" }),
 };
-
-// ─── Transactions ─────────────────────────────────────────────────────────────
 
 export interface CreateTransactionDTO {
   amount: string;
@@ -433,8 +414,6 @@ export const transactions = {
   remove: (id: string) => apiFetch<void>(`/transactions/${id}`, { method: "DELETE" }),
 };
 
-// ─── Chat (FinBot) ────────────────────────────────────────────────────────────
-
 export type ChatRole = "USER" | "ASSISTANT" | "SYSTEM";
 
 export type ChatActionType = "CREATE_EXPENSE" | "CREATE_INCOME" | "CREATE_TRANSFER";
@@ -495,8 +474,6 @@ export const chat = {
     apiFetch<PendingActionDTO>(`/chat/actions/${actionId}/reject`, { method: "POST" }),
 };
 
-// ─── Wishlist ─────────────────────────────────────────────────────────────────
-
 export type WishlistStatus = "ACTIVE" | "COMPLETED" | "CANCELLED";
 
 export interface WishlistDTO {
@@ -539,8 +516,6 @@ export const wishlist = {
   ) => apiFetch<WishlistDTO>(`/wishlist/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   remove: (id: string) => apiFetch<void>(`/wishlist/${id}`, { method: "DELETE" }),
 };
-
-// ─── Debts ────────────────────────────────────────────────────────────────────
 
 export type DebtStatus = "ACTIVE" | "PAID_OFF" | "IN_DEFAULT";
 
@@ -641,8 +616,6 @@ export const debts = {
   },
 };
 
-// ─── User Documents (RAG privado) ────────────────────────────────────────────
-
 export type DocumentStatus = "PROCESSING" | "READY" | "FAILED";
 
 export interface UserDocumentDTO {
@@ -679,8 +652,6 @@ export const documents = {
     apiFetch<void>(`/documents/${id}`, { method: "DELETE" }),
 };
 
-// ─── Users ────────────────────────────────────────────────────────────────────
-
 export interface UpdateUserDTO {
   username?: string;
   monthlySavingsGoal?: string;
@@ -691,8 +662,6 @@ export const users = {
   update: (id: string, data: UpdateUserDTO) =>
     apiFetch<UserDTO>(`/users/${id}`, { method: "PUT", body: JSON.stringify(data) }),
 };
-
-// ─── Formatting helpers ───────────────────────────────────────────────────────
 
 const copFormatter = new Intl.NumberFormat("es-CO", {
   style: "currency",
@@ -717,8 +686,6 @@ export const formatCOPShort = (amount: string | number): string => {
   return formatCOP(n);
 };
 
-// ─── Admin ────────────────────────────────────────────────────────────────────
-
 export const admin = {
   listUsers: (page = 0, size = 10) =>
     apiFetch<PageResult<UserDTO>>(`/admin/users?page=${page}&size=${size}&sort=createdAt,desc`),
@@ -735,8 +702,6 @@ export const admin = {
   deleteUser: (id: string) =>
     apiFetch<void>(`/admin/users/${id}`, { method: "DELETE" }),
 };
-
-// ─── Storage ──────────────────────────────────────────────────────────────────
 
 export interface UploadResult {
   /** Identificador interno del archivo en storage; lo que se persiste en la DB. */

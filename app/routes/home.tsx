@@ -32,8 +32,6 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
-// ─── Period config ────────────────────────────────────────────────────────────
-
 type Period = "7D" | "30D" | "3M" | "6M" | "ALL";
 
 const PERIODS: { label: string; value: Period; months?: number }[] = [
@@ -43,8 +41,6 @@ const PERIODS: { label: string; value: Period; months?: number }[] = [
   { label: "6M",   value: "6M",   months: 6 },
   { label: "Todo", value: "ALL"             },
 ];
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function emptyTransferForm(): CreateTransactionDTO {
   return {
@@ -74,8 +70,6 @@ function categoryColor(name: string) {
   for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
   return COLORS[Math.abs(h) % COLORS.length];
 }
-
-// ─── Small components ─────────────────────────────────────────────────────────
 
 function StatCard({ delay, icon, gradient, accentColor, label, value, subtext }: {
   delay: number; icon: React.ReactNode; gradient: string;
@@ -157,8 +151,6 @@ function AccountContextChip({
   );
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
-
 export default function Home() {
   const [summary, setSummary]                 = useState<DashboardSummary | null>(null);
   const [accountList, setAccountList]         = useState<AccountDTO[]>([]);
@@ -172,7 +164,6 @@ export default function Home() {
   const user = useAuthStore((s) => s.user);
   const navigate = useNavigate();
 
-  // Quick "Ahorrar" modal state
   const [saveModalOpen, setSaveModalOpen] = useState(false);
   const [saveForm, setSaveForm] = useState<CreateTransactionDTO>(emptyTransferForm());
   const [saveSaving, setSaveSaving] = useState(false);
@@ -199,7 +190,6 @@ export default function Home() {
       const { categoryId: _omit, ...payload } = saveForm;
       await txnApi.create(payload);
       setSaveModalOpen(false);
-      // Refresca summary y cuentas (los balances cambiaron)
       const months = PERIODS.find((p) => p.value === period)?.months;
       const [s, a] = await Promise.all([
         dashboard.getSummary({ accountId: selectedAccount?.id, months }),
@@ -249,7 +239,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* ── Greeting + quick actions ── */}
       <motion.div
         className="mb-5 flex items-start justify-between gap-3 flex-wrap"
         initial={{ opacity: 0, y: -8 }}
@@ -281,10 +270,8 @@ export default function Home() {
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
 
-        {/* ── Main content ── */}
         <div className="xl:col-span-9 space-y-4 min-w-0">
 
-          {/* Account Banner */}
           <motion.div
             initial={{ opacity: 0, y: -16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -301,7 +288,6 @@ export default function Home() {
             )}
           </motion.div>
 
-          {/* Stat Cards — 2 cols on most screens, 4 only on 2xl (wide desktop) */}
           <div className="grid grid-cols-2 2xl:grid-cols-4 gap-3">
             {loading ? (
               <>
@@ -318,14 +304,12 @@ export default function Home() {
             )}
           </div>
 
-          {/* ── Filter toolbar ── */}
           <motion.div
             className="bg-secondary rounded-xl border border-white/[0.04] p-2.5 flex items-center justify-between gap-3 flex-wrap"
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: 0.48 }}
           >
-            {/* Vista */}
             <div className="flex items-center gap-3 pl-1">
               <span className="text-[10px] text-gray-500 uppercase tracking-[0.18em] font-semibold hidden sm:block">Vista</span>
               <AccountContextChip
@@ -339,7 +323,6 @@ export default function Home() {
               )}
             </div>
 
-            {/* Período */}
             <div className="flex items-center gap-3">
               <span className="text-[10px] text-gray-500 uppercase tracking-[0.18em] font-semibold hidden sm:block">Período</span>
               <div className="flex items-center gap-0.5 bg-black/20 rounded-lg p-0.5 border border-white/[0.03]">
@@ -360,7 +343,6 @@ export default function Home() {
             </div>
           </motion.div>
 
-          {/* Charts row 1: bar chart + savings area */}
           <motion.div
             className="grid grid-cols-1 lg:grid-cols-2 gap-4"
             initial={{ opacity: 0, y: 20 }}
@@ -377,7 +359,6 @@ export default function Home() {
             )}
           </motion.div>
 
-          {/* ── Recent Transactions ── */}
           <motion.div
             className="bg-secondary rounded-2xl border border-white/[0.04] overflow-hidden"
             initial={{ opacity: 0, y: 20 }}
@@ -472,7 +453,6 @@ export default function Home() {
           </motion.div>
         </div>
 
-        {/* ── Right sidebar ── */}
         <motion.div
           className="xl:col-span-3 space-y-3 min-w-0"
           initial={{ opacity: 0, x: 16 }}
@@ -486,7 +466,6 @@ export default function Home() {
             </>
           ) : (
             <>
-              {/* Income */}
               <SidebarCard delay={0.42}>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[11px] text-gray-400 uppercase tracking-widest">Total Ingresos</span>
@@ -500,7 +479,6 @@ export default function Home() {
                 </div>
               </SidebarCard>
 
-              {/* Expenses */}
               <SidebarCard delay={0.5}>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[11px] text-gray-400 uppercase tracking-widest">Total Egresos</span>
@@ -519,15 +497,12 @@ export default function Home() {
                 </div>
               </SidebarCard>
 
-              {/* Spending Donut */}
               <SpendingDonutChart data={summary?.expensesByCategory ?? []} />
 
-              {/* Spending Heatmap — compact, below donut */}
               {txnLoading
                 ? <Skeleton className="h-64" />
                 : <SpendingHeatmap transactions={allTxns} />}
 
-              {/* Resumen Mensual */}
               <SidebarCard delay={0.7}>
                 <SectionLabel color="bg-cyan-400" text="Resumen Mensual" />
                 <div className="space-y-2.5">
@@ -569,7 +544,6 @@ export default function Home() {
         </motion.div>
       </div>
 
-      {/* Quick "Ahorrar" modal — usa el TransactionModal preconfigurado en TRANSFER */}
       <TransactionModal
         open={saveModalOpen}
         editing={null}

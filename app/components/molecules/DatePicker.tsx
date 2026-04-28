@@ -45,7 +45,6 @@ export function DatePicker({
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
 
-  // Re-sync view month when external value changes
   useEffect(() => {
     if (value) {
       const d = new Date(value + "T00:00:00");
@@ -109,7 +108,6 @@ export function DatePicker({
             transition={{ duration: 0.15 }}
             className="absolute left-0 right-0 top-full mt-2 bg-[#1a1a1f] border border-white/[0.08] rounded-xl shadow-2xl p-3 z-30"
           >
-            {/* Month navigator */}
             <div className="flex items-center justify-between mb-3">
               <button
                 type="button"
@@ -130,7 +128,6 @@ export function DatePicker({
               </button>
             </div>
 
-            {/* Weekday labels */}
             <div className="grid grid-cols-7 gap-1 mb-1">
               {WEEKDAYS.map((d, i) => (
                 <div key={i} className="text-center text-[10px] text-gray-600 font-semibold uppercase">
@@ -139,7 +136,6 @@ export function DatePicker({
               ))}
             </div>
 
-            {/* Days grid */}
             <div className="grid grid-cols-7 gap-1">
               {cells.map((d, i) => {
                 if (!d) return <div key={i} />;
@@ -164,7 +160,6 @@ export function DatePicker({
               })}
             </div>
 
-            {/* Footer */}
             <div className="flex justify-between items-center mt-3 pt-3 border-t border-white/[0.05]">
               <button
                 type="button"

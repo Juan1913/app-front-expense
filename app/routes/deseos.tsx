@@ -156,7 +156,6 @@ export default function Deseos() {
   return (
     <DashboardLayout>
       <div className="space-y-5">
-        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -181,7 +180,6 @@ export default function Deseos() {
           <div className="p-3 bg-red-900/30 border border-red-700/50 rounded-xl text-red-300 text-sm">{error}</div>
         )}
 
-        {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <StatCard delay={0.05} icon={<Gift className="h-5 w-5 text-white" />}         gradient="from-cyan-400 to-blue-600"    label="Deseos"       value={String(stats.count)}                   subtext={stats.count === 1 ? "registrado" : "registrados"} />
           <StatCard delay={0.10} icon={<TrendingUp className="h-5 w-5 text-white" />}   gradient="from-emerald-400 to-teal-600" label="Ahorrado"     value={formatCOPShort(stats.activeSum)}       subtext="en deseos activos" />
@@ -189,7 +187,6 @@ export default function Deseos() {
           <StatCard delay={0.20} icon={<CheckCircle2 className="h-5 w-5 text-white" />} gradient="from-amber-400 to-orange-600" label="Completados" value={String(stats.completed)}                subtext={stats.completed === 1 ? "deseo cumplido" : "deseos cumplidos"} />
         </div>
 
-        {/* Filter toolbar */}
         <motion.div
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
@@ -244,7 +241,6 @@ export default function Deseos() {
           </select>
         </motion.div>
 
-        {/* Grid */}
         {loading ? (
           <div className="flex justify-center pt-16">
             <Loader2 className="h-6 w-6 text-gray-500 animate-spin" />

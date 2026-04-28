@@ -67,25 +67,21 @@ export default function Cuentas() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Filter state
   const [search, setSearch] = useState("");
   const [searchDebounced, setSearchDebounced] = useState("");
   const [currency, setCurrency] = useState<string>("ALL");
   const [sortBy, setSortBy] = useState<AccountSortBy>("createdAt");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
-  // Modal state
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<AccountDTO | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [saving, setSaving] = useState(false);
 
-  // Delete state
   const [deleteTarget, setDeleteTarget] = useState<AccountDTO | null>(null);
   const [impact, setImpact] = useState<AccountImpact | null>(null);
   const [impactLoading, setImpactLoading] = useState(false);
 
-  // Details drawer
   const [detailTarget, setDetailTarget] = useState<AccountDTO | null>(null);
 
   useEffect(() => {
@@ -217,7 +213,6 @@ export default function Cuentas() {
   return (
     <DashboardLayout>
       <div className="space-y-5">
-        {/* ── Header ── */}
         <motion.div
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -244,7 +239,6 @@ export default function Cuentas() {
           </div>
         )}
 
-        {/* ── Stats row ── */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <StatCard delay={0.05} icon={<Wallet className="h-5 w-5 text-white" />}     gradient="from-cyan-400 to-blue-600"    label="Total cuentas"          value={String(stats.totalAccounts)}                         subtext={stats.totalAccounts === 1 ? "cuenta activa" : "cuentas activas"} />
           <StatCard delay={0.10} icon={<TrendingUp className="h-5 w-5 text-white" />} gradient="from-emerald-400 to-teal-600" label={`Balance ${stats.primaryCurrency}`} value={formatCOPShort(stats.totalInPrimaryCurrency)}         subtext="suma en moneda principal" />
@@ -252,14 +246,12 @@ export default function Cuentas() {
           <StatCard delay={0.20} icon={<Layers className="h-5 w-5 text-white" />}     gradient="from-amber-400 to-orange-600" label="Monedas"                value={String(stats.totalCurrencies)}                       subtext={stats.totalCurrencies === 1 ? "moneda" : "monedas distintas"} />
         </div>
 
-        {/* ── Filter toolbar ── */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25 }}
           className="bg-secondary rounded-xl border border-white/[0.04] p-2.5 flex flex-col sm:flex-row sm:items-center sm:flex-wrap gap-3"
         >
-          {/* Search */}
           <div className="relative w-full sm:w-[320px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
             <input
@@ -281,7 +273,6 @@ export default function Cuentas() {
 
           <div className="hidden sm:block flex-1" />
 
-          {/* Currency pills */}
           {availableCurrencies.length > 1 && (
             <div className="flex items-center gap-0.5 bg-black/20 rounded-lg p-0.5 border border-white/[0.04] w-full sm:w-auto overflow-x-auto no-scrollbar">
               {availableCurrencies.map((c) => (
@@ -301,10 +292,8 @@ export default function Cuentas() {
           )}
 
           <div className="flex items-center gap-2 self-end sm:self-auto">
-            {/* Custom sort dropdown */}
             <SortDropdown value={sortBy} onChange={setSortBy} />
 
-            {/* Dir toggle */}
             <button
               onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
               title={sortDir === "asc" ? "Ascendente" : "Descendente"}
@@ -315,7 +304,6 @@ export default function Cuentas() {
           </div>
         </motion.div>
 
-        {/* ── Grid ── */}
         {loading ? (
           <div className="flex justify-center pt-16">
             <Loader2 className="h-6 w-6 text-gray-500 animate-spin" />
@@ -355,7 +343,6 @@ export default function Cuentas() {
         )}
       </div>
 
-      {/* ── Create/Edit Modal ── */}
       <CreateEditModal
         open={showModal}
         editing={editing}
@@ -366,7 +353,6 @@ export default function Cuentas() {
         onSave={handleSave}
       />
 
-      {/* ── Delete confirm ── */}
       <DeleteConfirmModal
         open={deleteTarget !== null}
         title={`Eliminar "${deleteTarget?.name ?? ""}"`}
@@ -378,7 +364,6 @@ export default function Cuentas() {
         onPermanent={handleHardDelete}
       />
 
-      {/* ── Details drawer ── */}
       <AccountDetailsDrawer
         account={detailTarget}
         onClose={() => setDetailTarget(null)}
@@ -388,8 +373,6 @@ export default function Cuentas() {
     </DashboardLayout>
   );
 }
-
-// ─── StatCard ────────────────────────────────────────────────────────────────
 
 function StatCard({
   delay, icon, gradient, label, value, subtext,
@@ -417,8 +400,6 @@ function StatCard({
     </motion.div>
   );
 }
-
-// ─── Sort dropdown (custom styled) ───────────────────────────────────────────
 
 function SortDropdown({
   value, onChange,
@@ -474,8 +455,6 @@ function SortDropdown({
   );
 }
 
-// ─── Account Card ────────────────────────────────────────────────────────────
-
 function AccountCard({
   account, delay, gradient, onOpen, onEdit, onDelete,
 }: {
@@ -517,7 +496,6 @@ function AccountCard({
         </div>
       </CardVisual>
 
-      {/* Info row */}
       <div className="px-1 flex items-center justify-between gap-2">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
@@ -538,8 +516,6 @@ function AccountCard({
   );
 }
 
-// ─── Card visual (reusable) ─────────────────────────────────────────────────
-
 function CardVisual({
   account, gradient, size = "default", children,
 }: {
@@ -557,23 +533,19 @@ function CardVisual({
         size === "large" ? "p-6 aspect-[1.62/1]" : "p-5 aspect-[1.62/1]"
       }`}
     >
-      {/* Background effects */}
       <div className="absolute -top-20 -right-20 w-56 h-56 rounded-full bg-white/15 blur-3xl pointer-events-none" />
       <div className="absolute -bottom-16 -left-10 w-40 h-40 rounded-full bg-black/20 blur-3xl pointer-events-none" />
-      {/* Diagonal shine */}
       <div className="absolute inset-0 bg-[linear-gradient(115deg,transparent_45%,rgba(255,255,255,0.08)_50%,transparent_55%)] pointer-events-none" />
 
       {children}
 
       <div className="relative z-10 h-full flex flex-col justify-between text-white">
-        {/* Top: bank name */}
         <div className="flex items-start justify-between">
           <span className={`font-bold uppercase tracking-[0.25em] opacity-95 ${size === "large" ? "text-xs" : "text-[10px]"}`}>
             {account.bank || "Sin banco"}
           </span>
         </div>
 
-        {/* Middle: chip + card number */}
         <div className="flex items-end gap-4">
           <Chip size={size} />
           <div className="flex-1 min-w-0">
@@ -585,7 +557,6 @@ function CardVisual({
           </div>
         </div>
 
-        {/* Bottom: balance */}
         <div className="flex items-end justify-between">
           <div>
             <div className={`uppercase tracking-widest opacity-70 ${size === "large" ? "text-[10px]" : "text-[9px]"}`}>Balance</div>
@@ -613,8 +584,6 @@ function Chip({ size }: { size: "default" | "large" }) {
     </div>
   );
 }
-
-// ─── Create/Edit Modal ───────────────────────────────────────────────────────
 
 function CreateEditModal({
   open, editing, form, saving, onClose, onChange, onSave,
@@ -711,7 +680,6 @@ function CreateEditModal({
                 </Field>
               </div>
 
-              {/* Savings toggle */}
               <label className="flex items-start gap-3 p-3 bg-black/20 border border-white/[0.04] rounded-xl cursor-pointer hover:border-amber-500/30 transition-colors">
                 <input
                   type="checkbox"
@@ -774,8 +742,6 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-// ─── Details Drawer ──────────────────────────────────────────────────────────
-
 function AccountDetailsDrawer({
   account, onClose, onEdit, onDelete,
 }: {
@@ -821,7 +787,6 @@ function AccountDetailsDrawer({
             onClick={(e) => e.stopPropagation()}
             className="w-full max-w-md bg-[#0f0f12] border-l border-white/[0.06] h-full overflow-y-auto"
           >
-            {/* Header */}
             <div className="sticky top-0 z-10 bg-[#0f0f12]/95 backdrop-blur-sm border-b border-white/[0.04] px-5 py-4 flex items-center justify-between">
               <h2 className="text-white font-semibold">Detalles de cuenta</h2>
               <button
@@ -832,12 +797,10 @@ function AccountDetailsDrawer({
               </button>
             </div>
 
-            {/* Card visual */}
             <div className="p-5">
               <CardVisual account={account} gradient={gradientFor(account.id)} size="large" />
             </div>
 
-            {/* Key info */}
             <div className="px-5 pb-5 space-y-4">
               <div>
                 <h3 className="text-xl font-bold text-white">{account.name}</h3>
@@ -846,7 +809,6 @@ function AccountDetailsDrawer({
                 )}
               </div>
 
-              {/* Info rows */}
               <div className="bg-secondary rounded-xl border border-white/[0.04] divide-y divide-white/[0.04]">
                 <InfoRow label="Banco" value={account.bank || "—"} />
                 <InfoRow label="Número" value={account.cardNumber || "—"} mono />
@@ -858,7 +820,6 @@ function AccountDetailsDrawer({
                 />
               </div>
 
-              {/* Actions */}
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={onEdit}
@@ -874,7 +835,6 @@ function AccountDetailsDrawer({
                 </button>
               </div>
 
-              {/* Recent transactions */}
               <div className="bg-secondary rounded-xl border border-white/[0.04] overflow-hidden">
                 <div className="px-4 py-3 border-b border-white/[0.04] flex items-center justify-between">
                   <h4 className="text-sm font-semibold text-white">Transacciones recientes</h4>

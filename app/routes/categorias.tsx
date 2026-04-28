@@ -106,7 +106,6 @@ export default function Categorias() {
   return (
     <DashboardLayout>
       <div className="h-full flex flex-col gap-4">
-        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -131,7 +130,6 @@ export default function Categorias() {
           </div>
         )}
 
-        {/* Filter tabs */}
         <div className="flex gap-2">
           {["ALL", "EXPENSE", "INCOME"].map((t) => (
             <button
@@ -148,7 +146,6 @@ export default function Categorias() {
           ))}
         </div>
 
-        {/* List */}
         {loading ? (
           <div className="flex justify-center pt-16">
             <Loader2 className="h-6 w-6 text-gray-500 animate-spin" />
@@ -216,7 +213,6 @@ export default function Categorias() {
         )}
       </div>
 
-      {/* Modal */}
       <AnimatePresence>
         {showModal && (
           <motion.div
@@ -296,7 +292,6 @@ export default function Categorias() {
         )}
       </AnimatePresence>
 
-      {/* Delete confirmation with impact */}
       <DeleteConfirmModal
         open={deleteTarget !== null}
         title={`Eliminar "${deleteTarget?.name ?? ""}"`}

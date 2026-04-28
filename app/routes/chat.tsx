@@ -79,7 +79,6 @@ export default function Chat() {
       return;
     }
 
-    // Existing conversation — optimistic user message, then request assistant
     const optimistic: ChatMessageDTO = {
       id: crypto.randomUUID(),
       role: "USER",
@@ -137,12 +136,10 @@ export default function Chat() {
   return (
     <DashboardLayout>
       <div className="h-[calc(100vh-10rem)] flex rounded-2xl overflow-hidden border border-white/[0.04]">
-        {/* Desktop sidebar */}
         <aside className="hidden lg:flex w-72 flex-shrink-0">
           <ChatConversationList {...sidebarProps} />
         </aside>
 
-        {/* Mobile drawer */}
         <AnimatePresence>
           {drawerOpen && (
             <motion.div
@@ -166,9 +163,7 @@ export default function Chat() {
           )}
         </AnimatePresence>
 
-        {/* Chat area */}
         <div className="flex-1 min-w-0 flex flex-col bg-primary">
-          {/* Mobile header */}
           <div className="lg:hidden flex items-center justify-between px-4 py-3 border-b border-white/[0.04] bg-secondary">
             <button
               onClick={() => setDrawerOpen(true)}
@@ -190,7 +185,6 @@ export default function Chat() {
             </div>
           )}
 
-          {/* Body */}
           {!active && messages.length === 0 ? (
             <ChatEmptyState onPick={handleSend} />
           ) : (

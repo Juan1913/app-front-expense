@@ -55,7 +55,6 @@ export function DeleteConfirmModal({
             onClick={(e) => e.stopPropagation()}
             className="bg-[#141418] rounded-2xl w-full max-w-md overflow-hidden shadow-2xl border border-white/[0.06]"
           >
-            {/* Close */}
             <button
               onClick={onClose}
               className="absolute top-4 right-4 p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-white/[0.06] transition-colors"
@@ -63,9 +62,7 @@ export function DeleteConfirmModal({
               <X className="h-4 w-4" />
             </button>
 
-            {/* Body */}
             <div className="px-7 pt-7 pb-6">
-              {/* Icon */}
               <div className="w-12 h-12 rounded-2xl bg-rose-500/10 flex items-center justify-center mb-4">
                 <AlertTriangle className="h-6 w-6 text-rose-400" />
               </div>
@@ -91,7 +88,6 @@ export function DeleteConfirmModal({
               </div>
             </div>
 
-            {/* Actions */}
             <div className="px-5 pb-5 space-y-2">
               <button
                 onClick={() => handle("trash")}

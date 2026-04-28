@@ -33,7 +33,6 @@ export function ChatConversationList({
 }: Props) {
   return (
     <div className="h-full flex flex-col bg-secondary border-r border-white/[0.04]">
-      {/* Header */}
       <div className="p-4 border-b border-white/[0.04] space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -71,7 +70,6 @@ export function ChatConversationList({
         </button>
       </div>
 
-      {/* List */}
       <div className="flex-1 overflow-y-auto p-2">
         {loading ? (
           <div className="flex justify-center pt-8">
