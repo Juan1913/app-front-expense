@@ -32,16 +32,16 @@ export function ChatConversationList({
   onClose, onSelect, onNew, onDelete, onReindex,
 }: Props) {
   return (
-    <div className="h-full flex flex-col bg-secondary border-r border-white/[0.04]">
-      <div className="p-4 border-b border-white/[0.04] space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-md shadow-cyan-500/20">
+    <div className="h-full flex flex-col bg-secondary border-r border-white/[0.04] min-w-0">
+      <div className="p-3 border-b border-white/[0.04] space-y-2.5">
+        <div className="flex items-center justify-between gap-2 min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-md shadow-cyan-500/20 flex-shrink-0">
               <Sparkles className="h-4 w-4 text-white" />
             </div>
-            <span className="text-white font-semibold">FinBot</span>
+            <span className="text-white font-semibold truncate">FinBot</span>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 flex-shrink-0">
             <button
               onClick={onReindex}
               disabled={reindexing}
@@ -63,10 +63,10 @@ export function ChatConversationList({
         </div>
         <button
           onClick={onNew}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-sm font-semibold rounded-lg hover:opacity-90 transition-opacity shadow-lg shadow-cyan-500/20"
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-sm font-semibold rounded-lg hover:opacity-90 transition-opacity shadow-lg shadow-cyan-500/20 min-w-0"
         >
-          <Plus className="h-4 w-4" />
-          Nueva conversación
+          <Plus className="h-4 w-4 flex-shrink-0" />
+          <span className="truncate">Nueva conversación</span>
         </button>
       </div>
 

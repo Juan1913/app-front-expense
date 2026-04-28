@@ -146,7 +146,7 @@ export default function Chat() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm lg:hidden"
+              className="fixed inset-0 z-40 bg-black/80 backdrop-blur-md lg:hidden"
               onClick={() => setDrawerOpen(false)}
             >
               <motion.div
@@ -155,7 +155,7 @@ export default function Chat() {
                 exit={{ x: "-100%" }}
                 transition={{ type: "spring", damping: 30, stiffness: 300 }}
                 onClick={(e) => e.stopPropagation()}
-                className="w-72 h-full"
+                className="w-[88vw] max-w-[320px] h-full shadow-2xl"
               >
                 <ChatConversationList {...sidebarProps} onClose={() => setDrawerOpen(false)} />
               </motion.div>

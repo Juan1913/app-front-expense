@@ -2,10 +2,12 @@ import { motion } from "framer-motion";
 import { Sparkles } from "lucide-react";
 
 const SUGGESTIONS = [
-  "¿Puedo comprarme un computador este mes?",
-  "¿Cuánto gasté en comida el mes pasado?",
-  "¿Voy bien con mis ahorros?",
-  "Dame tips para gastar menos",
+  "¿Cómo está mi salud financiera?",
+  "¿Cuánta plata tengo?",
+  "¿En qué gasto más?",
+  "¿Gasté mucho en restaurantes?",
+  "Anota que gasté 50k en mercado",
+  "Pasá 200k a ahorro",
 ];
 
 interface Props {

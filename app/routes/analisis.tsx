@@ -134,7 +134,7 @@ export default function Analisis() {
               <FlaskConical className="h-6 w-6 text-cyan-400" /> Análisis
             </h1>
             <p className="text-sm text-gray-500 mt-0.5">
-              Modelos matemáticos aplicados a tu flujo: derivadas, regresión, puntos de equilibrio y elasticidad
+              Cómo evoluciona tu plata: ritmo de gasto, cuánto te alcanza, y a qué le metés más cuando ganás más
             </p>
           </div>
           <div className="flex items-center gap-0.5 bg-secondary rounded-lg p-0.5 border border-white/[0.04]">
@@ -175,9 +175,9 @@ export default function Analisis() {
                 delay={0.05}
                 icon={<Gauge className="h-4 w-4 text-white" />}
                 gradient="from-rose-400 to-red-600"
-                label="Velocidad gasto"
+                label="Gasto diario"
                 value={`${formatCOPShort(analysis.avgDailyExpense)}/día`}
-                subtext={`dE/dt promedio · ${analysis.series.length}d`}
+                subtext={`promedio en los últimos ${analysis.series.length} días`}
                 change={analysis.velocityTrendPct}
                 invertColors
               />
@@ -185,33 +185,33 @@ export default function Analisis() {
                 delay={0.08}
                 icon={<Zap className="h-4 w-4 text-white" />}
                 gradient={analysis.accelerationSign >= 0 ? "from-rose-400 to-red-600" : "from-emerald-400 to-teal-600"}
-                label="Aceleración"
-                value={formatAccel(analysis.avgAcceleration)}
-                subtext={analysis.accelerationSign >= 0 ? "gasto se acelera" : "gasto desacelera"}
+                label="Tendencia del gasto"
+                value={trendVerbal(analysis.avgAcceleration)}
+                subtext={trendHint(analysis.avgAcceleration)}
               />
               <MetricsKpiCard
                 delay={0.11}
                 icon={<Calendar className="h-4 w-4 text-white" />}
                 gradient={runway === null ? "from-emerald-400 to-teal-600" : runway < 30 ? "from-rose-400 to-red-600" : "from-amber-400 to-orange-600"}
-                label="Runway"
-                value={runway === null ? "∞" : `${Math.floor(runway)}d`}
-                subtext={runway === null ? "ahorrando neto" : "días al ritmo actual"}
+                label="Te alcanza para"
+                value={runway === null ? "∞" : `${Math.floor(runway)} días`}
+                subtext={runway === null ? "estás ahorrando, no gastas más de lo que entra" : "con tu saldo actual al ritmo de hoy"}
               />
               <MetricsKpiCard
                 delay={0.14}
                 icon={<PiggyBank className="h-4 w-4 text-white" />}
                 gradient="from-amber-400 to-orange-600"
-                label="Tasa ahorro"
+                label="Ahorras"
                 value={`${(analysis.savingsRatePct * 100).toFixed(1)}%`}
-                subtext="(I − G) / I"
+                subtext="de cada peso que entra"
               />
               <MetricsKpiCard
                 delay={0.17}
                 icon={<Scale className="h-4 w-4 text-white" />}
                 gradient="from-violet-400 to-purple-600"
-                label="Punto equilibrio"
+                label="Punto de equilibrio"
                 value={formatBreakEven(be.day, analysis.series)}
-                subtext={`R² = ${analysis.regBalance.r2.toFixed(2)}`}
+                subtext={confidenceLabel(analysis.regBalance.r2)}
               />
             </div>
 
@@ -219,8 +219,8 @@ export default function Analisis() {
 
             <ChartCard
               icon={<Activity className="h-4 w-4 text-cyan-400" />}
-              title="Velocidad y aceleración del gasto"
-              subtitle="Gasto diario, media móvil 7d (suavizado) y velocidad instantánea dE/dt"
+              title="¿Cómo está cambiando tu gasto?"
+              subtitle="Lo que gastaste cada día, la línea suavizada (promedio de los últimos 7 días) y qué tan rápido sube o baja"
             >
               <div className="h-72">
                 <ResponsiveContainer width="100%" height="100%">
@@ -259,15 +259,15 @@ export default function Analisis() {
               </div>
               <ChartLegend items={[
                 { color: "#fb7185", label: "Gasto diario" },
-                { color: "#fbbf24", label: "Media móvil 7d" },
-                { color: "#22d3ee", label: "Velocidad dE/dt", dashed: true },
+                { color: "#fbbf24", label: "Promedio 7 días" },
+                { color: "#22d3ee", label: "Qué tan rápido cambia", dashed: true },
               ]} />
             </ChartCard>
 
             <ChartCard
               icon={<TrendingUp className="h-4 w-4 text-emerald-400" />}
-              title="Regresión del balance acumulado"
-              subtitle={`Ajuste lineal · pendiente = ${formatCOPShort(analysis.regBalance.slope)}/día · R² = ${analysis.regBalance.r2.toFixed(3)} · proyección a 30 días con banda ±σ`}
+              title="Tu balance en el tiempo"
+              subtitle={`Ritmo: ${analysis.regBalance.slope >= 0 ? "+" : "−"}${formatCOPShort(Math.abs(analysis.regBalance.slope))}/día · ${confidenceLabel(analysis.regBalance.r2)} · proyección a 30 días con margen de error`}
             >
               <div className="h-72">
                 <ResponsiveContainer width="100%" height="100%">
@@ -294,9 +294,9 @@ export default function Analisis() {
                 </ResponsiveContainer>
               </div>
               <ChartLegend items={[
-                { color: "#34d399", label: "Balance real" },
-                { color: "#fbbf24", label: "Ajuste lineal", dashed: true },
-                { color: "#8b5cf6", label: "Proyección 30d", dashed: true },
+                { color: "#34d399", label: "Tu balance real" },
+                { color: "#fbbf24", label: "Tendencia", dashed: true },
+                { color: "#8b5cf6", label: "Proyección 30 días", dashed: true },
               ]} />
             </ChartCard>
 
@@ -355,8 +355,9 @@ function ChartLegend({ items }: { items: { color: string; label: string; dashed?
 function ModelSummary({
   analysis, currentBalance, burnRate, runway,
 }: { analysis: AnalysisResult; currentBalance: number; burnRate: number; runway: number | null }) {
-  const accelVerdict = analysis.avgAcceleration > 50 ? "acelerando"
-    : analysis.avgAcceleration < -50 ? "desacelerando" : "estable";
+  const slope = analysis.regBalance.slope;
+  const projected30 = slope * 30;
+  const trend = trendVerbal(analysis.avgAcceleration);
   return (
     <motion.div
       initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
@@ -364,34 +365,55 @@ function ModelSummary({
       className="bg-secondary rounded-2xl p-5 border border-white/[0.04] grid grid-cols-1 md:grid-cols-3 gap-4"
     >
       <ModelLine
-        label="Modelo del balance acumulado"
-        formula={`B(t) ≈ ${analysis.regBalance.slope >= 0 ? "+" : ""}${formatCOPShort(analysis.regBalance.slope)}·t ${analysis.regBalance.intercept >= 0 ? "+" : "−"} ${formatCOPShort(Math.abs(analysis.regBalance.intercept))}`}
-        hint={`Pendiente ${analysis.regBalance.slope >= 0 ? "positiva → ahorras" : "negativa → consumes ahorros"} · ajuste ${(analysis.regBalance.r2 * 100).toFixed(0)}%`}
-      />
-      <ModelLine
-        label="Burn rate / runway"
-        formula={
-          burnRate > 0
-            ? `R = ${formatCOP(currentBalance)} ÷ ${formatCOPShort(burnRate)}/día ≈ ${runway === null ? "∞" : `${Math.floor(runway)} d`}`
-            : `Ahorro neto · no hay burn`
+        label="Tu balance va"
+        value={
+          slope >= 0
+            ? `+${formatCOPShort(slope)}/día`
+            : `−${formatCOPShort(Math.abs(slope))}/día`
         }
-        hint={burnRate > 0 ? "Balance total ÷ gasto neto diario" : "Ingresos ≥ gastos en el período"}
+        valueClass={slope >= 0 ? "text-emerald-300" : "text-rose-300"}
+        hint={
+          slope >= 0
+            ? `Si seguís así, en 30 días sumás ~${formatCOPShort(projected30)}. Estás ahorrando.`
+            : `Si seguís así, en 30 días perdés ~${formatCOPShort(Math.abs(projected30))}. Estás consumiendo ahorros.`
+        }
       />
       <ModelLine
-        label="Dinámica del gasto"
-        formula={`E̅ = ${formatCOPShort(analysis.avgDailyExpense)}/d · Ë = ${formatAccel(analysis.avgAcceleration)}`}
-        hint={`Gasto medio y aceleración (2ª derivada) → ${accelVerdict}`}
+        label="Cuánto te dura el saldo"
+        value={
+          burnRate > 0
+            ? runway === null ? "∞" : `${Math.floor(runway)} días`
+            : "no aplica"
+        }
+        valueClass={
+          burnRate <= 0 ? "text-emerald-300"
+            : runway !== null && runway < 30 ? "text-rose-300"
+            : "text-amber-300"
+        }
+        hint={
+          burnRate > 0
+            ? `Tu saldo de ${formatCOP(currentBalance)} dividido por lo que gastás de más cada día (${formatCOPShort(burnRate)}/día).`
+            : `Tus ingresos superan a tus gastos en este período. No estás quemando saldo.`
+        }
+      />
+      <ModelLine
+        label="Tu gasto"
+        value={`${formatCOPShort(analysis.avgDailyExpense)}/día`}
+        valueClass="text-white"
+        hint={`En promedio. La tendencia indica que el gasto está ${trend.toLowerCase()}.`}
       />
     </motion.div>
   );
 }
 
-function ModelLine({ label, formula, hint }: { label: string; formula: string; hint: string }) {
+function ModelLine({
+  label, value, valueClass, hint,
+}: { label: string; value: string; valueClass?: string; hint: string }) {
   return (
     <div>
       <div className="text-[10px] text-gray-500 uppercase tracking-widest font-semibold mb-1">{label}</div>
-      <div className="text-sm text-white font-mono tabular-nums leading-relaxed">{formula}</div>
-      <div className="text-[11px] text-gray-500 mt-1">{hint}</div>
+      <div className={`text-xl font-bold tabular-nums leading-tight ${valueClass ?? "text-white"}`}>{value}</div>
+      <div className="text-[11px] text-gray-500 mt-1.5 leading-snug">{hint}</div>
     </div>
   );
 }
@@ -402,14 +424,14 @@ function CategoryGrowthTable({ growth }: { growth: CategoryGrowth[] }) {
       <div className="flex items-start gap-2 mb-3">
         <TrendingUp className="h-4 w-4 text-rose-400 mt-0.5 flex-shrink-0" />
         <div>
-          <h3 className="text-white text-base font-semibold">Tendencia por categoría</h3>
+          <h3 className="text-white text-base font-semibold">Categorías que más crecen o bajan</h3>
           <p className="text-gray-500 text-xs mt-0.5">
-            Pendiente de la regresión lineal del gasto mensual (dCat/dmes)
+            Cuánto sube o baja tu gasto en cada categoría, mes a mes. En rojo lo que crece, en verde lo que baja.
           </p>
         </div>
       </div>
       {growth.length === 0 ? (
-        <p className="text-xs text-gray-600 py-6 text-center">Se necesitan al menos 2 meses de datos</p>
+        <p className="text-xs text-gray-600 py-6 text-center">Necesitas al menos 2 meses de datos para ver tendencias</p>
       ) : (
         <div className="space-y-2">
           {growth.map((g) => {
@@ -431,7 +453,12 @@ function CategoryGrowthTable({ growth }: { growth: CategoryGrowth[] }) {
                     />
                   </div>
                 </div>
-                <span className="text-[10px] text-gray-600 tabular-nums w-10 text-right">R²{g.r2.toFixed(2)}</span>
+                <span
+                  title={`Confianza estadística (qué tan claro es el patrón): ${(g.r2 * 100).toFixed(0)}%`}
+                  className="text-[10px] text-gray-600 tabular-nums w-14 text-right"
+                >
+                  {confidenceShort(g.r2)}
+                </span>
               </div>
             );
           })}
@@ -447,26 +474,31 @@ function ElasticityTable({ elasticity }: { elasticity: CategoryElasticity[] }) {
       <div className="flex items-start gap-2 mb-3">
         <Scale className="h-4 w-4 text-cyan-400 mt-0.5 flex-shrink-0" />
         <div>
-          <h3 className="text-white text-base font-semibold">Elasticidad ingreso → gasto</h3>
+          <h3 className="text-white text-base font-semibold">A qué le metés más cuando ganás más</h3>
           <p className="text-gray-500 text-xs mt-0.5">
-            ε &gt; 1 de lujo · ε ≈ 1 proporcional · ε &lt; 1 necesidad
+            Cuando entran más ingresos, ¿en qué categorías sube tu gasto? Las "de lujo" suben más rápido que el ingreso, las "esenciales" no se mueven.
           </p>
         </div>
       </div>
       {elasticity.length === 0 ? (
-        <p className="text-xs text-gray-600 py-6 text-center">Se necesitan al menos 3 meses con ingreso y gasto</p>
+        <p className="text-xs text-gray-600 py-6 text-center">Necesitas al menos 3 meses con ingresos y gastos</p>
       ) : (
         <div className="space-y-1.5">
           {elasticity.map((e) => (
             <div key={e.name} className="flex items-center gap-3 py-1.5 border-b border-white/[0.03] last:border-0">
               <span className="text-sm text-white flex-1 truncate">{e.name}</span>
-              <span className={`text-xs font-mono tabular-nums px-2 py-0.5 rounded ${elasticityClass(e.elasticity)}`}>
-                ε = {e.elasticity.toFixed(2)}
+              <span
+                title={`Sensibilidad numérica: ${e.elasticity.toFixed(2)}`}
+                className={`text-[11px] font-semibold px-2 py-0.5 rounded ${elasticityClass(e.elasticity)}`}
+              >
+                {elasticityLabel(e.elasticity)}
               </span>
-              <span className="text-[10px] text-gray-600 tabular-nums w-12 text-right">
-                R²{e.r2.toFixed(2)}
+              <span
+                title={`Confianza estadística: ${(e.r2 * 100).toFixed(0)}%`}
+                className="text-[10px] text-gray-600 w-14 text-right"
+              >
+                {confidenceShort(e.r2)}
               </span>
-              <span className="text-[10px] text-gray-500 w-20 text-right">{elasticityLabel(e.elasticity)}</span>
             </div>
           ))}
         </div>
@@ -483,10 +515,10 @@ function elasticityClass(e: number): string {
 }
 
 function elasticityLabel(e: number): string {
-  if (e > 1.2) return "de lujo";
-  if (e < 0) return "inferior";
-  if (e < 0.5) return "necesidad";
-  return "proporcional";
+  if (e > 1.2) return "De lujo";
+  if (e < 0) return "Baja al ganar más";
+  if (e < 0.5) return "Esencial";
+  return "Proporcional";
 }
 
 function DailyTooltip({ active, payload, label }: any) {
@@ -658,10 +690,28 @@ function computeCategoryElasticity(txns: TransactionDTO[]): CategoryElasticity[]
   return results.slice(0, 8);
 }
 
-function formatAccel(v: number): string {
-  if (Math.abs(v) < 1) return "≈ 0";
-  const sign = v >= 0 ? "+" : "−";
-  return `${sign}${formatCOPShort(Math.abs(v))}/d²`;
+function trendVerbal(acceleration: number): string {
+  if (acceleration > 50) return "Subiendo";
+  if (acceleration < -50) return "Bajando";
+  return "Estable";
+}
+
+function trendHint(acceleration: number): string {
+  if (acceleration > 50) return "tu gasto está aumentando con el tiempo";
+  if (acceleration < -50) return "tu gasto está disminuyendo";
+  return "tu gasto se mantiene parejo";
+}
+
+function confidenceLabel(r2: number): string {
+  if (r2 >= 0.7) return "tendencia clara";
+  if (r2 >= 0.4) return "tendencia moderada";
+  return "tendencia poco definida";
+}
+
+function confidenceShort(r2: number): string {
+  if (r2 >= 0.7) return "alta";
+  if (r2 >= 0.4) return "media";
+  return "baja";
 }
 
 function formatBreakEven(day: number | null, series: DailySeriesPoint[]): string {
