@@ -7,6 +7,7 @@ import {
   Plus, X, Loader2, TrendingUp, TrendingDown,
   ChevronLeft, ChevronRight, Search, ChevronDown, Filter,
   CreditCard, Tag, Calendar, Wallet, Scale, ArrowRightLeft,
+  Download, Upload, FileSpreadsheet, CheckCircle2, AlertTriangle,
 } from "lucide-react";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useSearchParams } from "react-router";
@@ -15,6 +16,7 @@ import {
   type TransactionDTO, type AccountDTO, type CategoryDTO,
   type CreateTransactionDTO, type TransactionSortBy, type SortDir,
   type TransactionFilters, type TransactionSummary,
+  type TransactionImportResult,
 } from "~/services/api";
 
 type TypeFilter = "ALL" | "INCOME" | "EXPENSE" | "TRANSFER";
@@ -273,6 +275,36 @@ export default function Transacciones() {
     } catch (e: any) { setError(e.message); }
   }
 
+  const [exporting, setExporting] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+
+  async function handleExport() {
+    setExporting(true);
+    try {
+      const { blob, filename } = await transactions.exportExcel(filters);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e: any) {
+      setError(e.message ?? "Error exportando");
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  async function refreshAfterImport() {
+    const [r, s] = await Promise.all([
+      transactions.list({ ...filters, sortBy, sortDir, page, size: pageSize }),
+      transactions.summary(filters),
+    ]);
+    setList(r.content); setTotalPages(r.totalPages); setTotalElements(r.totalElements); setSummary(s);
+  }
+
   return (
     <DashboardLayout>
       <div className="space-y-5">
@@ -287,12 +319,28 @@ export default function Transacciones() {
               {activeChips.length > 0 && ` con filtros aplicados`}
             </p>
           </div>
-          <button
-            onClick={openCreate}
-            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-sm font-semibold rounded-xl hover:opacity-90 transition-opacity shadow-lg shadow-cyan-500/20"
-          >
-            <Plus className="h-4 w-4" /> Nueva transacción
-          </button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => setImportOpen(true)}
+              className="flex items-center gap-2 px-3 py-2.5 bg-secondary text-gray-200 hover:text-white border border-white/[0.08] hover:border-white/[0.15] text-sm font-semibold rounded-xl transition-colors"
+            >
+              <Upload className="h-4 w-4" /> Importar
+            </button>
+            <button
+              onClick={handleExport}
+              disabled={exporting || totalElements === 0}
+              className="flex items-center gap-2 px-3 py-2.5 bg-secondary text-gray-200 hover:text-white border border-white/[0.08] hover:border-white/[0.15] text-sm font-semibold rounded-xl transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+              Exportar
+            </button>
+            <button
+              onClick={openCreate}
+              className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-sm font-semibold rounded-xl hover:opacity-90 transition-opacity shadow-lg shadow-cyan-500/20"
+            >
+              <Plus className="h-4 w-4" /> Nueva transacción
+            </button>
+          </div>
         </motion.div>
 
         {error && (
@@ -562,6 +610,12 @@ export default function Transacciones() {
         onPermanent={handleDelete}
       />
 
+      <ImportModal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onImported={refreshAfterImport}
+      />
+
       <style>{`
         .select-dark {
           width: 100%;
@@ -661,6 +715,270 @@ function Dropdown<T extends string>({
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
+  );
+}
+
+function ImportModal({
+  open, onClose, onImported,
+}: { open: boolean; onClose: () => void; onImported: () => void | Promise<void> }) {
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<TransactionImportResult | null>(null);
+  const [step, setStep] = useState<"select" | "preview" | "done">("select");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [autoCreateAccounts, setAutoCreateAccounts] = useState(false);
+
+  useEffect(() => {
+    if (!open) {
+      setFile(null); setPreview(null); setStep("select"); setError(null); setBusy(false);
+      setAutoCreateAccounts(false);
+    }
+  }, [open]);
+
+  async function runPreview(f: File, autoCreate: boolean) {
+    setBusy(true); setError(null);
+    try {
+      const res = await transactions.importFile(f, true, autoCreate);
+      setPreview(res);
+      setStep("preview");
+    } catch (e: any) {
+      setError(e.message ?? "Error analizando archivo");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function runCommit() {
+    if (!file) return;
+    setBusy(true); setError(null);
+    try {
+      const res = await transactions.importFile(file, false, autoCreateAccounts);
+      setPreview(res);
+      setStep("done");
+      await onImported();
+    } catch (e: any) {
+      setError(e.message ?? "Error importando");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!open) return null;
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+        onClick={onClose}
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
+          onClick={(e) => e.stopPropagation()}
+          className="bg-[#141418] border border-white/[0.06] rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col"
+        >
+          <div className="flex items-center justify-between p-5 border-b border-white/[0.06]">
+            <div className="flex items-center gap-2">
+              <FileSpreadsheet className="h-5 w-5 text-cyan-400" />
+              <h2 className="text-lg font-semibold text-white">Importar transacciones</h2>
+            </div>
+            <button onClick={onClose} className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/[0.06] transition-colors">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-5">
+            {error && (
+              <div className="mb-4 p-3 bg-red-900/30 border border-red-700/50 rounded-xl text-red-300 text-sm">
+                {error}
+              </div>
+            )}
+
+            {step === "select" && (
+              <div>
+                <p className="text-sm text-gray-300 mb-3">
+                  Sube un archivo <strong>.xlsx</strong> o <strong>.csv</strong> con estas columnas (los nombres deben coincidir):
+                </p>
+                <div className="bg-secondary border border-white/[0.04] rounded-xl p-3 text-xs text-gray-300 mb-4 overflow-x-auto">
+                  <code className="whitespace-nowrap">Fecha · Tipo · Monto · Cuenta · Cuenta destino · Categoría · Descripción</code>
+                </div>
+                <ul className="text-xs text-gray-500 space-y-1 mb-4 list-disc pl-4">
+                  <li><strong>Tipo</strong>: INGRESO, GASTO o TRANSFERENCIA (también acepta INCOME/EXPENSE/TRANSFER).</li>
+                  <li><strong>Cuenta</strong>: por defecto debe existir, pero podés activar la opción de abajo para crearla automáticamente.</li>
+                  <li><strong>Categoría</strong>: si no existe, se crea automáticamente con el tipo correspondiente.</li>
+                  <li><strong>Cuenta destino</strong> sólo aplica para TRANSFERENCIA.</li>
+                  <li>Tip: exportá primero un Excel para ver el formato exacto.</li>
+                </ul>
+
+                <label className="flex items-start gap-2.5 mb-4 p-3 bg-secondary border border-white/[0.04] rounded-xl cursor-pointer hover:border-white/[0.08] transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={autoCreateAccounts}
+                    onChange={(e) => setAutoCreateAccounts(e.target.checked)}
+                    className="mt-0.5 accent-cyan-500"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-white font-medium">Crear cuentas que no existan</p>
+                    <p className="text-[11px] text-gray-500 mt-0.5">
+                      Si está activo, las cuentas nuevas se crean con saldo 0, moneda COP y banco igual al nombre.
+                      Después podés ajustarlas en /cuentas.
+                    </p>
+                  </div>
+                </label>
+
+                <label className="block">
+                  <div className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
+                    file ? "border-cyan-500/40 bg-cyan-500/5" : "border-white/[0.08] hover:border-white/[0.18]"
+                  }`}>
+                    <Upload className="h-8 w-8 text-gray-500 mx-auto mb-2" />
+                    {file ? (
+                      <>
+                        <p className="text-sm text-white font-medium">{file.name}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">{(file.size / 1024).toFixed(1)} KB</p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-sm text-gray-300">Click o arrastra un archivo aquí</p>
+                        <p className="text-xs text-gray-500 mt-0.5">.xlsx o .csv</p>
+                      </>
+                    )}
+                  </div>
+                  <input
+                    type="file"
+                    accept=".xlsx,.xls,.csv,.txt"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) { setFile(f); runPreview(f, autoCreateAccounts); }
+                    }}
+                  />
+                </label>
+
+                {busy && (
+                  <div className="flex items-center justify-center gap-2 mt-4 text-sm text-gray-400">
+                    <Loader2 className="h-4 w-4 animate-spin" /> Analizando archivo…
+                  </div>
+                )}
+              </div>
+            )}
+
+            {step === "preview" && preview && (
+              <ImportPreview result={preview} />
+            )}
+
+            {step === "done" && preview && (
+              <div className="text-center py-8">
+                <CheckCircle2 className="h-12 w-12 text-emerald-400 mx-auto mb-3" />
+                <p className="text-lg font-bold text-white mb-1">
+                  {preview.createdRows} {preview.createdRows === 1 ? "transacción creada" : "transacciones creadas"}
+                </p>
+                {preview.invalidRows > 0 && (
+                  <p className="text-sm text-amber-400 mt-1">
+                    {preview.invalidRows} {preview.invalidRows === 1 ? "fila falló" : "filas fallaron"} y no se importaron
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center justify-end gap-2 p-4 border-t border-white/[0.06]">
+            {step === "preview" && (
+              <button
+                onClick={() => { setStep("select"); setFile(null); setPreview(null); }}
+                className="px-4 py-2 rounded-xl text-sm text-gray-300 hover:text-white hover:bg-white/[0.04] transition-colors"
+              >
+                Volver
+              </button>
+            )}
+            {step !== "done" ? (
+              <button
+                onClick={onClose}
+                className="px-4 py-2 rounded-xl text-sm text-gray-300 hover:text-white hover:bg-white/[0.04] transition-colors"
+              >
+                Cancelar
+              </button>
+            ) : (
+              <button
+                onClick={onClose}
+                className="px-5 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-sm font-semibold hover:opacity-90 transition-opacity"
+              >
+                Cerrar
+              </button>
+            )}
+
+            {step === "preview" && preview && preview.validRows > 0 && (
+              <button
+                onClick={runCommit}
+                disabled={busy}
+                className="flex items-center gap-2 px-5 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-sm font-semibold hover:opacity-90 disabled:opacity-40 transition-opacity"
+              >
+                {busy && <Loader2 className="h-4 w-4 animate-spin" />}
+                Importar {preview.validRows} {preview.validRows === 1 ? "fila" : "filas"}
+              </button>
+            )}
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
+function ImportPreview({ result }: { result: TransactionImportResult }) {
+  return (
+    <div>
+      <div className="grid grid-cols-3 gap-2 mb-4">
+        <div className="bg-secondary rounded-xl p-3 border border-white/[0.04]">
+          <div className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Total</div>
+          <div className="text-xl font-bold text-white tabular-nums">{result.totalRows}</div>
+        </div>
+        <div className="bg-emerald-500/10 rounded-xl p-3 border border-emerald-500/30">
+          <div className="text-[10px] text-emerald-400 uppercase tracking-widest mb-1">Válidas</div>
+          <div className="text-xl font-bold text-emerald-300 tabular-nums">{result.validRows}</div>
+        </div>
+        <div className={`rounded-xl p-3 border ${result.invalidRows > 0 ? "bg-rose-500/10 border-rose-500/30" : "bg-secondary border-white/[0.04]"}`}>
+          <div className={`text-[10px] uppercase tracking-widest mb-1 ${result.invalidRows > 0 ? "text-rose-400" : "text-gray-500"}`}>Con errores</div>
+          <div className={`text-xl font-bold tabular-nums ${result.invalidRows > 0 ? "text-rose-300" : "text-white"}`}>{result.invalidRows}</div>
+        </div>
+      </div>
+
+      <div className="bg-secondary rounded-xl border border-white/[0.04] overflow-hidden">
+        <div className="grid grid-cols-[28px_1fr] sm:grid-cols-[28px_90px_70px_90px_1fr] text-[10px] text-gray-500 uppercase tracking-widest font-semibold px-3 py-2 border-b border-white/[0.04]">
+          <span></span>
+          <span className="hidden sm:block">Fecha</span>
+          <span className="hidden sm:block">Tipo</span>
+          <span className="hidden sm:block">Monto</span>
+          <span>Detalle</span>
+        </div>
+        <div className="max-h-[40vh] overflow-y-auto divide-y divide-white/[0.04]">
+          {result.rows.map((row) => (
+            <div
+              key={row.row}
+              className={`grid grid-cols-[28px_1fr] sm:grid-cols-[28px_90px_70px_90px_1fr] items-center gap-2 px-3 py-2 text-xs ${
+                row.valid ? "" : "bg-rose-500/5"
+              }`}
+            >
+              <span className="flex-shrink-0">
+                {row.valid
+                  ? <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                  : <AlertTriangle className="h-4 w-4 text-rose-400" />}
+              </span>
+              <span className="hidden sm:block text-gray-300 tabular-nums truncate">{row.date ?? "—"}</span>
+              <span className="hidden sm:block text-gray-400 truncate">{row.type ?? "—"}</span>
+              <span className="hidden sm:block text-gray-300 tabular-nums truncate">{row.amount ?? "—"}</span>
+              <span className="text-gray-300 truncate">
+                {row.valid
+                  ? <>
+                      <span className="sm:hidden text-gray-400">{row.type} · {row.amount} · </span>
+                      {row.categoryName ?? row.transferToAccountName ?? "—"}
+                      {row.description ? <span className="text-gray-500"> · {row.description}</span> : null}
+                    </>
+                  : <span className="text-rose-300">Fila {row.row}: {row.errorMessage ?? "error"}</span>}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

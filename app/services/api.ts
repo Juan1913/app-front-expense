@@ -399,6 +399,29 @@ function buildTxnQuery(params: TransactionListParams | TransactionFilters): URLS
   return qs;
 }
 
+export interface TransactionImportRow {
+  row: number;
+  date: string | null;
+  type: string | null;
+  amount: string | null;
+  accountName: string | null;
+  transferToAccountName: string | null;
+  categoryName: string | null;
+  description: string | null;
+  valid: boolean;
+  errorMessage: string | null;
+  created: boolean;
+}
+
+export interface TransactionImportResult {
+  totalRows: number;
+  validRows: number;
+  invalidRows: number;
+  createdRows: number;
+  dryRun: boolean;
+  rows: TransactionImportRow[];
+}
+
 export const transactions = {
   list: (params?: TransactionListParams) =>
     apiFetch<{ content: TransactionDTO[]; totalElements: number; totalPages: number; number: number; size: number }>(
@@ -412,6 +435,37 @@ export const transactions = {
   update: (id: string, data: Partial<CreateTransactionDTO>) =>
     apiFetch<TransactionDTO>(`/transactions/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   remove: (id: string) => apiFetch<void>(`/transactions/${id}`, { method: "DELETE" }),
+  exportExcel: async (params?: TransactionFilters) => {
+    const token = getToken();
+    const res = await fetch(`${BASE_URL}/transactions/export.xlsx?${buildTxnQuery(params ?? {})}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const blob = await res.blob();
+    const dispo = res.headers.get("content-disposition") ?? "";
+    const match = /filename\*=UTF-8''([^;]+)|filename="([^"]+)"/i.exec(dispo);
+    const filename = match ? decodeURIComponent(match[1] ?? match[2]) : `transacciones-${Date.now()}.xlsx`;
+    return { blob, filename };
+  },
+  importFile: async (file: File, dryRun: boolean, autoCreateAccounts: boolean = false) => {
+    const token = getToken();
+    const form = new FormData();
+    form.append("file", file);
+    const qs = new URLSearchParams({
+      dryRun: String(dryRun),
+      autoCreateAccounts: String(autoCreateAccounts),
+    });
+    const res = await fetch(`${BASE_URL}/transactions/import?${qs.toString()}`, {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      body: form,
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error((body as { message?: string }).message ?? `HTTP ${res.status}`);
+    }
+    return (await res.json()) as TransactionImportResult;
+  },
 };
 
 export type ChatRole = "USER" | "ASSISTANT" | "SYSTEM";
