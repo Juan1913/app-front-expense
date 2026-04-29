@@ -10,6 +10,7 @@ interface AuthUser {
 }
 
 interface AuthState {
+  token: string | null;
   user: AuthUser | null;
   saveSession: (data: LoginResponse) => void;
   clearSession: () => void;
@@ -29,15 +30,17 @@ const safeStorage = createJSONStorage(() =>
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
+      token: null,
       user: null,
 
       saveSession: (data: LoginResponse) => {
-        set({ user: { userId: data.userId, email: data.email, username: data.username, role: data.role } });
+        const { token, ...user } = data;
+        set({ token, user });
       },
 
-      clearSession: () => set({ user: null }),
+      clearSession: () => set({ token: null, user: null }),
 
-      isAuthenticated: () => !!get().user,
+      isAuthenticated: () => !!get().token,
     }),
     {
       name: "finz-auth",

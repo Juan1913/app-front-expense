@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { Sidebar, OnboardingModal, shouldShowOnboarding } from "~/components/molecules";
-import { auth as authApi } from "~/services/api";
 import {
   Zap, Search, LogOut, Home, Edit3, CreditCard, RefreshCw, Gift,
   BarChart3, MessageCircle, Target, Trash2, Settings, Users, CornerDownLeft,
@@ -49,7 +48,7 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, clearSession, isAuthenticated } = useAuthStore();
+  const { token, user, clearSession, isAuthenticated } = useAuthStore();
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -66,11 +65,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (user && shouldShowOnboarding()) {
+    if (token && shouldShowOnboarding()) {
       const t = setTimeout(() => setOnboardingOpen(true), 350);
       return () => clearTimeout(t);
     }
-  }, [user]);
+  }, [token]);
 
   useEffect(() => {
     setMobileMenuOpen(false);
@@ -190,12 +189,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     if (!isAuthenticated()) {
       navigate("/login");
     }
-  }, [user, navigate]);
+  }, [token, navigate]);
 
-  if (!user) return null;
+  if (!token) return null;
 
-  async function handleLogout() {
-    try { await authApi.logout(); } catch {}
+  function handleLogout() {
     clearSession();
     navigate("/login");
   }

@@ -1,4 +1,5 @@
 export interface LoginResponse {
+  token: string;
   userId: string;
   email: string;
   username: string;
@@ -105,15 +106,16 @@ export interface PageResult<T> {
 
 const BASE_URL = (import.meta.env.VITE_API_URL ?? "") + "/api/v1";
 
-function readCookie(name: string): string | null {
-  if (typeof document === "undefined") return null;
-  const match = document.cookie.match(new RegExp("(?:^|; )" + name.replace(/[-]/g, "\\$&") + "=([^;]*)"));
-  return match ? decodeURIComponent(match[1]) : null;
-}
-
-function getCsrfToken(): string | null {
-  return readCookie("XSRF-TOKEN");
-}
+export const getToken = (): string | null => {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem("finz-auth");
+    if (!raw) return null;
+    return JSON.parse(raw)?.state?.token ?? null;
+  } catch {
+    return null;
+  }
+};
 
 function handleSessionExpired(path: string): boolean {
   if (path.startsWith("/auth/")) return false;
@@ -127,55 +129,18 @@ function handleSessionExpired(path: string): boolean {
   return true;
 }
 
-let refreshPromise: Promise<boolean> | null = null;
-
-async function tryRefresh(): Promise<boolean> {
-  if (refreshPromise) return refreshPromise;
-  refreshPromise = (async () => {
-    try {
-      const res = await fetch(`${BASE_URL}/auth/refresh`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-      });
-      return res.ok;
-    } catch {
-      return false;
-    } finally {
-      refreshPromise = null;
-    }
-  })();
-  return refreshPromise;
-}
-
-async function rawFetch(path: string, options: RequestInit): Promise<Response> {
-  const method = (options.method ?? "GET").toUpperCase();
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    ...(options.headers as Record<string, string> | undefined ?? {}),
-  };
-  if (method !== "GET" && method !== "HEAD") {
-    const csrf = getCsrfToken();
-    if (csrf) headers["X-XSRF-TOKEN"] = csrf;
-  }
-  return fetch(`${BASE_URL}${path}`, {
-    ...options,
-    credentials: "include",
-    headers,
-  });
-}
-
 async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
-  let res = await rawFetch(path, options);
+  const token = getToken();
+  const res = await fetch(`${BASE_URL}${path}`, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...options.headers,
+    },
+  });
 
-  if (res.status === 401 && !path.startsWith("/auth/")) {
-    const ok = await tryRefresh();
-    if (ok) {
-      res = await rawFetch(path, options);
-    } else if (handleSessionExpired(path)) {
-      throw new Error("Sesión expirada");
-    }
-  } else if ((res.status === 401 || res.status === 403) && handleSessionExpired(path)) {
+  if ((res.status === 401 || res.status === 403) && handleSessionExpired(path)) {
     throw new Error("Sesión expirada");
   }
 
@@ -195,12 +160,6 @@ export const auth = {
       method: "POST",
       body: JSON.stringify({ email, password }),
     }),
-
-  logout: () =>
-    apiFetch<{ message: string }>("/auth/logout", { method: "POST" }),
-
-  refresh: () =>
-    apiFetch<LoginResponse>("/auth/refresh", { method: "POST" }),
 
   register: (username: string, email: string, password: string) =>
     apiFetch<{ id: string; username: string; email: string }>("/auth/register", {
@@ -479,8 +438,9 @@ export const transactions = {
     apiFetch<TransactionDTO>(`/transactions/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   remove: (id: string) => apiFetch<void>(`/transactions/${id}`, { method: "DELETE" }),
   exportExcel: async (params?: TransactionFilters) => {
+    const token = getToken();
     const res = await fetch(`${BASE_URL}/transactions/export.xlsx?${buildTxnQuery(params ?? {})}`, {
-      credentials: "include",
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const blob = await res.blob();
@@ -490,17 +450,16 @@ export const transactions = {
     return { blob, filename };
   },
   importFile: async (file: File, dryRun: boolean, autoCreateAccounts: boolean = false) => {
+    const token = getToken();
     const form = new FormData();
     form.append("file", file);
     const qs = new URLSearchParams({
       dryRun: String(dryRun),
       autoCreateAccounts: String(autoCreateAccounts),
     });
-    const csrf = getCsrfToken();
     const res = await fetch(`${BASE_URL}/transactions/import?${qs.toString()}`, {
       method: "POST",
-      credentials: "include",
-      headers: csrf ? { "X-XSRF-TOKEN": csrf } : undefined,
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       body: form,
     });
     if (!res.ok) {
@@ -510,14 +469,13 @@ export const transactions = {
     return (await res.json()) as TransactionImportResult;
   },
   importExtract: async (file: File, accountId: string, dryRun: boolean) => {
+    const token = getToken();
     const form = new FormData();
     form.append("file", file);
     const qs = new URLSearchParams({ accountId, dryRun: String(dryRun) });
-    const csrf = getCsrfToken();
     const res = await fetch(`${BASE_URL}/transactions/import-extract?${qs.toString()}`, {
       method: "POST",
-      credentials: "include",
-      headers: csrf ? { "X-XSRF-TOKEN": csrf } : undefined,
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       body: form,
     });
     if (!res.ok) {
@@ -792,13 +750,12 @@ export const documents = {
   list: () => apiFetch<UserDocumentDTO[]>("/documents"),
 
   upload: async (file: File): Promise<UserDocumentDTO> => {
+    const token = getToken();
     const form = new FormData();
     form.append("file", file);
-    const csrf = getCsrfToken();
     const res = await fetch(`${BASE_URL}/documents`, {
       method: "POST",
-      credentials: "include",
-      headers: csrf ? { "X-XSRF-TOKEN": csrf } : undefined,
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: form,
     });
     if (!res.ok) {
@@ -872,14 +829,13 @@ export interface UploadResult {
 
 export const storage = {
   upload: async (file: File, folder = "uploads"): Promise<UploadResult> => {
+    const token = getToken();
     const form = new FormData();
     form.append("file", file);
     form.append("folder", folder);
-    const csrf = getCsrfToken();
     const res = await fetch(`${BASE_URL}/storage/upload`, {
       method: "POST",
-      credentials: "include",
-      headers: csrf ? { "X-XSRF-TOKEN": csrf } : undefined,
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: form,
     });
     if (!res.ok) {
