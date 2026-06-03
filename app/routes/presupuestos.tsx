@@ -1,4 +1,5 @@
 import { DashboardLayout } from "~/components/templates";
+import { DeleteConfirmModal } from "~/components/molecules";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, Edit3, Trash2, X, Loader2, Target, ChevronLeft, ChevronRight,
@@ -65,9 +66,15 @@ function daysLeftInMonth(month: number, year: number): number {
 interface FormState {
   categoryId: string;
   amount: string;
+  month: number;
+  year: number;
 }
 
-const emptyForm: FormState = { categoryId: "", amount: "" };
+const NOW = new Date();
+const emptyForm: FormState = {
+  categoryId: "", amount: "",
+  month: NOW.getMonth() + 1, year: NOW.getFullYear(),
+};
 
 export default function Presupuestos() {
   const now = new Date();
@@ -162,12 +169,12 @@ export default function Presupuestos() {
 
   function openCreate() {
     setEditing(null);
-    setForm(emptyForm);
+    setForm({ ...emptyForm, month, year });
     setShowModal(true);
   }
   function openEdit(b: BudgetComparisonItem) {
     setEditing(b);
-    setForm({ categoryId: b.categoryId, amount: b.budgeted });
+    setForm({ categoryId: b.categoryId, amount: b.budgeted, month: b.month, year: b.year });
     setShowModal(true);
   }
 
@@ -181,7 +188,8 @@ export default function Presupuestos() {
         await budgets.create({
           categoryId: form.categoryId,
           amount: form.amount,
-          month, year,
+          month: form.month,
+          year: form.year,
         });
       }
       const refreshed = await budgets.comparison({ month, year });
@@ -194,15 +202,26 @@ export default function Presupuestos() {
     }
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm("¿Eliminar este presupuesto?")) return;
+  const [deleteTarget, setDeleteTarget] = useState<BudgetComparisonItem | null>(null);
+
+  async function handleTrash() {
+    if (!deleteTarget) return;
     try {
-      await budgets.remove(id);
-      setList((prev) => prev.filter((b) => b.id !== id));
+      await budgets.remove(deleteTarget.id);
+      setList((prev) => prev.filter((b) => b.id !== deleteTarget.id));
       setDetailTarget(null);
-    } catch (e: any) {
-      setError(e.message);
-    }
+      setDeleteTarget(null);
+    } catch (e: any) { setError(e.message); }
+  }
+
+  async function handlePermanentDelete() {
+    if (!deleteTarget) return;
+    try {
+      await budgets.removePermanent(deleteTarget.id);
+      setList((prev) => prev.filter((b) => b.id !== deleteTarget.id));
+      setDetailTarget(null);
+      setDeleteTarget(null);
+    } catch (e: any) { setError(e.message); }
   }
 
   const isCurrent = month === now.getMonth() + 1 && year === now.getFullYear();
@@ -395,7 +414,7 @@ export default function Presupuestos() {
                   delay={i * 0.04}
                   onOpen={() => setDetailTarget(b)}
                   onEdit={() => openEdit(b)}
-                  onDelete={() => handleDelete(b.id)}
+                  onDelete={() => setDeleteTarget(b)}
                 />
               ))}
             </AnimatePresence>
@@ -422,7 +441,19 @@ export default function Presupuestos() {
         budget={detailTarget}
         onClose={() => setDetailTarget(null)}
         onEdit={() => { if (detailTarget) { openEdit(detailTarget); setDetailTarget(null); } }}
-        onDelete={() => { if (detailTarget) handleDelete(detailTarget.id); }}
+        onDelete={() => { if (detailTarget) setDeleteTarget(detailTarget); }}
+      />
+
+      <DeleteConfirmModal
+        open={deleteTarget !== null}
+        title="Eliminar presupuesto"
+        description={deleteTarget
+          ? `${deleteTarget.categoryName} · ${MONTHS_ES[deleteTarget.month - 1]} ${deleteTarget.year} · ${formatCOP(deleteTarget.budgeted)}`
+          : ""}
+        impact={[]}
+        onClose={() => setDeleteTarget(null)}
+        onTrash={handleTrash}
+        onPermanent={handlePermanentDelete}
       />
     </DashboardLayout>
   );
@@ -658,9 +689,37 @@ function CreateEditModal({
               </button>
             </div>
 
-            <p className="text-xs text-gray-500 mb-4">
-              Período: <span className="text-cyan-400 font-semibold">{MONTHS_ES[month - 1]} {year}</span>
-            </p>
+            {editing ? (
+              <p className="text-xs text-gray-500 mb-4">
+                Período: <span className="text-cyan-400 font-semibold">{MONTHS_ES[form.month - 1]} {form.year}</span>
+              </p>
+            ) : (
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <div>
+                  <label className="text-sm text-gray-400 mb-1 block">Mes *</label>
+                  <select
+                    value={form.month}
+                    onChange={(e) => onChange({ ...form, month: Number(e.target.value) })}
+                    className="w-full bg-secondary text-white px-3 py-2.5 rounded-xl border border-gray-700 focus:outline-none focus:border-cyan-500 text-sm appearance-none cursor-pointer"
+                  >
+                    {MONTHS_ES.map((m, i) => (
+                      <option key={i} value={i + 1}>{m}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm text-gray-400 mb-1 block">Año *</label>
+                  <input
+                    type="number"
+                    min="2000"
+                    max="2100"
+                    value={form.year}
+                    onChange={(e) => onChange({ ...form, year: Number(e.target.value) })}
+                    className="w-full bg-secondary text-white px-3 py-2.5 rounded-xl border border-gray-700 focus:outline-none focus:border-cyan-500 text-sm tabular-nums"
+                  />
+                </div>
+              </div>
+            )}
 
             <div className="space-y-4">
               <div>

@@ -1,14 +1,23 @@
 import { DashboardLayout } from "~/components/templates";
 import { motion, AnimatePresence } from "framer-motion";
-import { Trash2, RotateCcw, Loader2, CreditCard, Tag, AlertTriangle } from "lucide-react";
+import { Trash2, RotateCcw, Loader2, CreditCard, Tag, Target, AlertTriangle } from "lucide-react";
 import { useState, useEffect } from "react";
-import { accounts, categories, formatCOP, type AccountDTO, type CategoryDTO } from "~/services/api";
+import {
+  accounts, categories, budgets, formatCOP,
+  type AccountDTO, type CategoryDTO, type BudgetDTO,
+} from "~/services/api";
 
-type TrashKind = "account" | "category";
+const MONTHS_ES = [
+  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+];
+
+type TrashKind = "account" | "category" | "budget";
 
 export default function Papelera() {
   const [trashAccounts, setTrashAccounts] = useState<AccountDTO[]>([]);
   const [trashCategories, setTrashCategories] = useState<CategoryDTO[]>([]);
+  const [trashBudgets, setTrashBudgets] = useState<BudgetDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -18,9 +27,10 @@ export default function Papelera() {
   async function load() {
     setLoading(true);
     try {
-      const [a, c] = await Promise.all([accounts.trash(), categories.trash()]);
+      const [a, c, b] = await Promise.all([accounts.trash(), categories.trash(), budgets.trash()]);
       setTrashAccounts(a);
       setTrashCategories(c);
+      setTrashBudgets(b);
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -34,9 +44,12 @@ export default function Papelera() {
       if (kind === "account") {
         await accounts.restore(id);
         setTrashAccounts((prev) => prev.filter((a) => a.id !== id));
-      } else {
+      } else if (kind === "category") {
         await categories.restore(id);
         setTrashCategories((prev) => prev.filter((c) => c.id !== id));
+      } else {
+        await budgets.restore(id);
+        setTrashBudgets((prev) => prev.filter((b) => b.id !== id));
       }
     } catch (e: any) {
       setError(e.message);
@@ -52,9 +65,12 @@ export default function Papelera() {
       if (kind === "account") {
         await accounts.removePermanent(id);
         setTrashAccounts((prev) => prev.filter((a) => a.id !== id));
-      } else {
+      } else if (kind === "category") {
         await categories.removePermanent(id);
         setTrashCategories((prev) => prev.filter((c) => c.id !== id));
+      } else {
+        await budgets.removePermanent(id);
+        setTrashBudgets((prev) => prev.filter((b) => b.id !== id));
       }
     } catch (e: any) {
       setError(e.message);
@@ -63,7 +79,7 @@ export default function Papelera() {
     }
   }
 
-  const totalItems = trashAccounts.length + trashCategories.length;
+  const totalItems = trashAccounts.length + trashCategories.length + trashBudgets.length;
 
   return (
     <DashboardLayout>
@@ -163,6 +179,30 @@ export default function Papelera() {
               </TrashSection>
             )}
 
+            {trashBudgets.length > 0 && (
+              <TrashSection
+                title="Presupuestos"
+                icon={<Target className="h-4 w-4 text-amber-400" />}
+                count={trashBudgets.length}
+              >
+                <AnimatePresence>
+                  {trashBudgets.map((b) => (
+                    <TrashRow
+                      key={b.id}
+                      id={b.id}
+                      busy={busy === b.id}
+                      title={`${b.categoryName} · ${MONTHS_ES[b.month - 1]} ${b.year}`}
+                      subtitle={<span className="text-amber-300">{formatCOP(b.amount)}</span>}
+                      accent="amber"
+                      icon={<Target className="h-4 w-4" />}
+                      onRestore={() => restore("budget", b.id)}
+                      onPermanent={() => destroy("budget", b.id, b.categoryName)}
+                    />
+                  ))}
+                </AnimatePresence>
+              </TrashSection>
+            )}
+
             <div className="flex items-start gap-3 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl">
               <AlertTriangle className="h-4 w-4 text-amber-400 flex-shrink-0 mt-0.5" />
               <p className="text-xs text-amber-200/90 leading-relaxed">
@@ -206,11 +246,13 @@ function TrashRow({
   title: string;
   subtitle: React.ReactNode;
   icon: React.ReactNode;
-  accent: "cyan" | "violet";
+  accent: "cyan" | "violet" | "amber";
   onRestore: () => void;
   onPermanent: () => void;
 }) {
-  const accentBg  = accent === "cyan" ? "bg-cyan-500/15 text-cyan-400" : "bg-violet-500/15 text-violet-400";
+  const accentBg = accent === "cyan" ? "bg-cyan-500/15 text-cyan-400"
+    : accent === "violet" ? "bg-violet-500/15 text-violet-400"
+    : "bg-amber-500/15 text-amber-400";
   return (
     <motion.div
       initial={{ opacity: 0, x: -8 }}

@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { NavItem } from "~/components/atoms";
 import {
   Home, Edit3, CreditCard, RefreshCw, Gift, BarChart3, Settings, MessageCircle, Users,
-  Target, Trash2, ChevronLeft, ChevronRight, ChevronDown, FlaskConical, Sparkles, Coins, X, Zap, FileText,
+  Target, Trash2, ChevronLeft, ChevronRight, ChevronDown, FlaskConical, Sparkles, Coins, X, Zap, FileText, Repeat, DollarSign,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useLocation, useNavigate } from "react-router";
@@ -25,6 +25,8 @@ const navigationItems: NavigationItem[] = [
   { icon: FlaskConical,  label: "Análisis",         href: "/analisis" },
   { icon: Sparkles,      label: "Simulador",        href: "/simulador" },
   { icon: Coins,         label: "Deudas",           href: "/deudas" },
+  { icon: Repeat,        label: "Gastos fijos",     href: "/fijos" },
+  { icon: DollarSign,    label: "Dólar (TRM)",      href: "/dolar" },
   { icon: MessageCircle, label: "FinBot IA",        href: "/chat" },
   { icon: FileText,      label: "Documentos",       href: "/documentos" },
   { icon: Trash2,        label: "Papelera",         href: "/papelera" },

@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
-import { Sidebar, OnboardingModal, shouldShowOnboarding } from "~/components/molecules";
+import { Sidebar, OnboardingModal, shouldShowOnboarding, TrmChip } from "~/components/molecules";
 import {
   Zap, Search, LogOut, Home, Edit3, CreditCard, RefreshCw, Gift,
   BarChart3, MessageCircle, Target, Trash2, Settings, Users, CornerDownLeft,
-  FlaskConical, Sparkles, Coins, Menu, X, FileText,
+  FlaskConical, Sparkles, Coins, Menu, X, FileText, Repeat, DollarSign,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useAuthStore } from "~/store/authStore";
@@ -30,6 +30,8 @@ const SEARCH_ENTRIES: SearchEntry[] = [
   { label: "Análisis",        href: "/analisis",     icon: FlaskConical,  keywords: ["derivadas", "regresion", "runway", "elasticidad", "analysis", "matematicas"] },
   { label: "Simulador",       href: "/simulador",    icon: Sparkles,      keywords: ["simulator", "que pasa si", "what if", "escenarios", "proyeccion"] },
   { label: "Deudas",          href: "/deudas",       icon: Coins,         keywords: ["debts", "snowball", "avalanche", "credito", "prestamo", "tarjeta", "interes"] },
+  { label: "Gastos fijos",    href: "/fijos",        icon: Repeat,        keywords: ["recurrentes", "arriendo", "gym", "seguridad social", "suscripciones", "subscriptions", "fixed"] },
+  { label: "Dólar (TRM)",     href: "/dolar",        icon: DollarSign,    keywords: ["trm", "dolar", "usd", "tasa de cambio", "exchange rate"] },
   { label: "FinBot IA",       href: "/chat",         icon: MessageCircle, keywords: ["chat", "ia", "ai", "finbot"] },
   { label: "Documentos",      href: "/documentos",   icon: FileText,      keywords: ["documents", "pdf", "extracto", "archivos", "rag"] },
   { label: "Papelera",        href: "/papelera",     icon: Trash2,        keywords: ["trash", "basura"] },
@@ -300,6 +302,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               </div>
             )}
           </div>
+
+          <TrmChip />
 
           <div className="flex items-center gap-2 sm:gap-3">
             <span className="text-white hidden sm:inline">{user?.username ?? "Usuario"}</span>

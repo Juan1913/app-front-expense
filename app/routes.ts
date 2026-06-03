@@ -17,6 +17,8 @@ export default [
   route("/analisis", "routes/analisis.tsx"),
   route("/simulador", "routes/simulador.tsx"),
   route("/deudas", "routes/deudas.tsx"),
+  route("/fijos", "routes/fijos.tsx"),
+  route("/dolar", "routes/dolar.tsx"),
   route("/documentos", "routes/documentos.tsx"),
   route("/cuenta", "routes/cuenta.tsx"),
   route("/papelera", "routes/papelera.tsx"),

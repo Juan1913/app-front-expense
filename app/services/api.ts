@@ -324,6 +324,9 @@ export const budgets = {
   ) =>
     apiFetch<BudgetDTO>(`/budgets/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   remove: (id: string) => apiFetch<void>(`/budgets/${id}`, { method: "DELETE" }),
+  trash: () => apiFetch<BudgetDTO[]>("/budgets/trash"),
+  restore: (id: string) => apiFetch<BudgetDTO>(`/budgets/${id}/restore`, { method: "POST" }),
+  removePermanent: (id: string) => apiFetch<void>(`/budgets/${id}/permanent`, { method: "DELETE" }),
 };
 
 export const categories = {
@@ -845,6 +848,78 @@ export const storage = {
     const data = await res.json();
     return { key: data.key as string, url: data.url as string };
   },
+};
+
+export type RecurringFrequency = "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY";
+
+export interface RecurringTransactionDTO {
+  id: string;
+  amount: string;
+  description: string;
+  type: TransactionType;
+  frequency: RecurringFrequency;
+  startDate: string;
+  endDate: string | null;
+  nextExecution: string;
+  active: boolean;
+  lastExecutedAt: string | null;
+  createdAt: string;
+  accountId: string;
+  accountName: string;
+  categoryId: string;
+  categoryName: string;
+}
+
+export interface CreateRecurringTransactionDTO {
+  amount: string;
+  description: string;
+  type: TransactionType;
+  frequency: RecurringFrequency;
+  startDate: string;
+  endDate?: string;
+  accountId: string;
+  categoryId: string;
+}
+
+export interface UpdateRecurringTransactionDTO {
+  amount?: string;
+  description?: string;
+  frequency?: RecurringFrequency;
+  endDate?: string;
+  accountId?: string;
+  categoryId?: string;
+  active?: boolean;
+}
+
+export const recurringTransactions = {
+  list: () => apiFetch<RecurringTransactionDTO[]>("/recurring-transactions"),
+  getById: (id: string) => apiFetch<RecurringTransactionDTO>(`/recurring-transactions/${id}`),
+  create: (data: CreateRecurringTransactionDTO) =>
+    apiFetch<RecurringTransactionDTO>("/recurring-transactions", {
+      method: "POST", body: JSON.stringify(data),
+    }),
+  update: (id: string, data: UpdateRecurringTransactionDTO) =>
+    apiFetch<RecurringTransactionDTO>(`/recurring-transactions/${id}`, {
+      method: "PUT", body: JSON.stringify(data),
+    }),
+  remove: (id: string) =>
+    apiFetch<void>(`/recurring-transactions/${id}`, { method: "DELETE" }),
+  apply: (id: string) =>
+    apiFetch<RecurringTransactionDTO>(`/recurring-transactions/${id}/apply`, { method: "POST" }),
+  applyDue: () =>
+    apiFetch<{ created: number }>(`/recurring-transactions/apply-due`, { method: "POST" }),
+};
+
+export interface TrmRateDTO {
+  date: string;
+  value: string;
+  source: string | null;
+}
+
+export const trm = {
+  current: () => apiFetch<TrmRateDTO>("/trm/current"),
+  history: (from: string, to: string) =>
+    apiFetch<TrmRateDTO[]>(`/trm/history?from=${from}&to=${to}`),
 };
 
 export const daysLeftInMonth = (): number => {

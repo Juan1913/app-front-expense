@@ -41,3 +41,4 @@ export { WishlistDrawer } from './WishlistDrawer';
 export { WishlistModal, emptyWishlistForm } from './WishlistModal';
 export type { WishlistFormState } from './WishlistModal';
 export { OnboardingModal, shouldShowOnboarding } from './OnboardingModal';
+export { TrmChip } from './TrmChip';
