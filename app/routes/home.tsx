@@ -27,7 +27,7 @@ import { useAuthStore } from "~/store/authStore";
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "Dashboard · FINZ" },
+    { title: "Dashboard · FINAZ" },
     { name: "description", content: "Gestiona tus finanzas personales" },
   ];
 }

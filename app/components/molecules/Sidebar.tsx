@@ -218,7 +218,7 @@ export function Sidebar({ collapsed, onToggle, mobileOpen = false, onMobileClose
               <div className="w-8 h-8 bg-warning rounded flex items-center justify-center">
                 <Zap className="text-white h-5 w-5" />
               </div>
-              <span className="text-white font-bold text-lg">FINZ</span>
+              <span className="text-white font-bold text-lg">FINAZ</span>
             </div>
             <button
               onClick={onMobileClose}

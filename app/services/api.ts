@@ -109,7 +109,7 @@ const BASE_URL = (import.meta.env.VITE_API_URL ?? "") + "/api/v1";
 export const getToken = (): string | null => {
   if (typeof window === "undefined") return null;
   try {
-    const raw = localStorage.getItem("finz-auth");
+    const raw = localStorage.getItem("FINAZ-auth");
     if (!raw) return null;
     return JSON.parse(raw)?.state?.token ?? null;
   } catch {
@@ -122,7 +122,7 @@ function handleSessionExpired(path: string): boolean {
   if (typeof window === "undefined") return false;
   if (window.location.pathname === "/login") return false;
 
-  try { localStorage.removeItem("finz-auth"); } catch {}
+  try { localStorage.removeItem("FINAZ-auth"); } catch {}
 
   const next = encodeURIComponent(window.location.pathname + window.location.search);
   window.location.href = `/login?next=${next}&reason=expired`;

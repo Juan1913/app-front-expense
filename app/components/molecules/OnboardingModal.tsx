@@ -18,7 +18,7 @@ const SLIDES: Slide[] = [
   {
     icon: Sparkles,
     iconGradient: "from-cyan-500 to-blue-600",
-    title: "Bienvenido a FINZ",
+    title: "Bienvenido a FINAZ",
     description:
       "Tu app personal para entender tu plata: cuentas, gastos, ingresos, deudas y metas — todo en un solo lugar, con un asesor IA listo para ayudarte.",
     bullets: [
@@ -101,7 +101,7 @@ const SLIDES: Slide[] = [
   },
 ];
 
-const STORAGE_KEY = "finz-onboarding-completed";
+const STORAGE_KEY = "FINAZ-onboarding-completed";
 
 export function OnboardingModal({
   open, onClose,

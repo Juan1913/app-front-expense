@@ -9,7 +9,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { useAuthStore } from "~/store/authStore";
 
-const SIDEBAR_STATE_KEY = "finz-sidebar-collapsed";
+const SIDEBAR_STATE_KEY = "FINAZ-sidebar-collapsed";
 
 interface SearchEntry {
   label: string;
@@ -215,7 +215,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           <div className="w-8 h-8 bg-warning rounded flex items-center justify-center flex-shrink-0">
             <Zap className="text-white h-5 w-5" />
           </div>
-          <span className="text-white font-bold text-xl">FINZ</span>
+          <span className="text-white font-bold text-xl">FINAZ</span>
         </div>
 
         <div className="flex items-center gap-2 sm:gap-4">

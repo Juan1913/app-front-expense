@@ -8,7 +8,7 @@ import { admin, type UserDTO } from "~/services/api";
 import { DashboardLayout } from "~/components/templates/DashboardLayout";
 
 export function meta() {
-  return [{ title: "Usuarios · FINZ Admin" }];
+  return [{ title: "Usuarios · FINAZ Admin" }];
 }
 
 export default function AdminUsers() {

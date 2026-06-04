@@ -5,7 +5,7 @@ import { Zap, Lock, Loader2, Eye, EyeOff, CheckCircle, XCircle } from "lucide-re
 import { auth } from "~/services/api";
 
 export function meta() {
-  return [{ title: "Restablecer contraseña · FINZ" }];
+  return [{ title: "Restablecer contraseña · FINAZ" }];
 }
 
 export default function ResetPassword() {
@@ -156,7 +156,7 @@ function ResetShell({ children }: { children: React.ReactNode }) {
           <div className="w-10 h-10 bg-warning rounded-lg flex items-center justify-center shadow-lg shadow-warning/30">
             <Zap className="text-white h-6 w-6" />
           </div>
-          <span className="text-white font-bold text-3xl tracking-tight">FINZ</span>
+          <span className="text-white font-bold text-3xl tracking-tight">FINAZ</span>
         </div>
 
         <div className="bg-secondary rounded-2xl p-8">

@@ -43,7 +43,7 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: () => !!get().token,
     }),
     {
-      name: "finz-auth",
+      name: "FINAZ-auth",
       storage: safeStorage,
     }
   )

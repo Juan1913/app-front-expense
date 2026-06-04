@@ -4,7 +4,7 @@ import { Zap, Mail, Loader2, ArrowLeft, CheckCircle } from "lucide-react";
 import { auth } from "~/services/api";
 
 export function meta() {
-  return [{ title: "Recuperar contraseña · FINZ" }];
+  return [{ title: "Recuperar contraseña · FINAZ" }];
 }
 
 export default function ForgotPassword() {
@@ -39,7 +39,7 @@ export default function ForgotPassword() {
           <div className="w-10 h-10 bg-warning rounded-lg flex items-center justify-center shadow-lg shadow-warning/30">
             <Zap className="text-white h-6 w-6" />
           </div>
-          <span className="text-white font-bold text-3xl tracking-tight">FINZ</span>
+          <span className="text-white font-bold text-3xl tracking-tight">FINAZ</span>
         </div>
 
         <div className="bg-secondary rounded-2xl p-8">
@@ -48,7 +48,7 @@ export default function ForgotPassword() {
               <CheckCircle className="h-12 w-12 text-emerald-400" />
               <h1 className="text-white text-xl font-semibold">Revisá tu correo</h1>
               <p className="text-gray-400 text-sm">
-                Si <span className="text-cyan-400">{email}</span> está registrado en FINZ,
+                Si <span className="text-cyan-400">{email}</span> está registrado en FINAZ,
                 en unos segundos te llegará un enlace para elegir una nueva contraseña.
                 El enlace expira en 1 hora.
               </p>

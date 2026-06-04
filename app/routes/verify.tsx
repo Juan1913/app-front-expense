@@ -6,7 +6,7 @@ import { auth } from "~/services/api";
 import { useAuthStore } from "~/store/authStore";
 
 export function meta() {
-  return [{ title: "Activar cuenta · FINZ" }];
+  return [{ title: "Activar cuenta · FINAZ" }];
 }
 
 type Phase = "verifying" | "setup" | "error";
@@ -68,7 +68,7 @@ export default function Verify() {
           <div className="w-10 h-10 bg-warning rounded-lg flex items-center justify-center shadow-lg shadow-warning/30">
             <Zap className="text-white h-6 w-6" />
           </div>
-          <span className="text-white font-bold text-3xl tracking-tight">FINZ</span>
+          <span className="text-white font-bold text-3xl tracking-tight">FINAZ</span>
         </div>
 
         <AnimatePresence mode="wait">
